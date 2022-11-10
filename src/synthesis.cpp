@@ -10,6 +10,7 @@
 
 #include <math.h>
 
+#include <ext/tqdm.h>
 #include "world/common.h"
 #include "world/constantnumbers.h"
 #include "world/matlabfunctions.h"
@@ -138,7 +139,7 @@ static void GetPeriodicResponse(int fft_size, const double *spectrum,
 }
 
 static void GetSpectralEnvelope(double current_time, double frame_period,
-    int f0_length, const double * const *spectrogram, int fft_size,
+    int f0_length, const torch::Tensor& spectrogram, int fft_size,
     double *spectral_envelope) {
   int current_frame_floor = MyMinInt(f0_length - 1,
     static_cast<int>(floor(current_time / frame_period)));
@@ -148,16 +149,16 @@ static void GetSpectralEnvelope(double current_time, double frame_period,
 
   if (current_frame_floor == current_frame_ceil)
     for (int i = 0; i <= fft_size / 2; ++i)
-      spectral_envelope[i] = fabs(spectrogram[current_frame_floor][i]);
+      spectral_envelope[i] = fabs(spectrogram[current_frame_floor][i].item<float>());
   else
     for (int i = 0; i <= fft_size / 2; ++i)
       spectral_envelope[i] =
-        (1.0 - interpolation) * fabs(spectrogram[current_frame_floor][i]) +
-        interpolation * fabs(spectrogram[current_frame_ceil][i]);
+        (1.0 - interpolation) * fabs(spectrogram[current_frame_floor][i].item<float>()) +
+        interpolation * fabs(spectrogram[current_frame_ceil][i].item<float>());
 }
 
 static void GetAperiodicRatio(double current_time, double frame_period,
-    int f0_length, const double * const *aperiodicity, int fft_size,
+    int f0_length, const torch::Tensor& aperiodicity, int fft_size,
     double *aperiodic_spectrum) {
   int current_frame_floor = MyMinInt(f0_length - 1,
     static_cast<int>(floor(current_time / frame_period)));
@@ -168,21 +169,21 @@ static void GetAperiodicRatio(double current_time, double frame_period,
   if (current_frame_floor == current_frame_ceil)
     for (int i = 0; i <= fft_size / 2; ++i)
       aperiodic_spectrum[i] =
-        pow(GetSafeAperiodicity(aperiodicity[current_frame_floor][i]), 2.0);
+        pow(GetSafeAperiodicity(aperiodicity[current_frame_floor][i].item<float>()), 2.0);
   else
     for (int i = 0; i <= fft_size / 2; ++i)
       aperiodic_spectrum[i] = pow((1.0 - interpolation) *
-          GetSafeAperiodicity(aperiodicity[current_frame_floor][i]) +
+          GetSafeAperiodicity(aperiodicity[current_frame_floor][i].item<float>()) +
           interpolation *
-          GetSafeAperiodicity(aperiodicity[current_frame_ceil][i]), 2.0);
+          GetSafeAperiodicity(aperiodicity[current_frame_ceil][i].item<float>()), 2.0);
 }
 
 //-----------------------------------------------------------------------------
 // GetOneFrameSegment() calculates a periodic and aperiodic response at a time.
 //-----------------------------------------------------------------------------
 static void GetOneFrameSegment(double current_vuv, int noise_size,
-    const double * const *spectrogram, int fft_size,
-    const double * const *aperiodicity, int f0_length, double frame_period,
+    const torch::Tensor& spectrogram, int fft_size,
+    const torch::Tensor& aperiodicity, int f0_length, double frame_period,
     double current_time, double fractional_time_shift, int fs,
     const ForwardRealFFT *forward_real_fft,
     const InverseRealFFT *inverse_real_fft,
@@ -220,7 +221,7 @@ static void GetOneFrameSegment(double current_vuv, int noise_size,
   delete[] aperiodic_response;
 }
 
-static void GetTemporalParametersForTimeBase(const double *f0, int f0_length,
+static void GetTemporalParametersForTimeBase(const torch::Tensor& f0, int f0_length,
     int fs, int y_length, double frame_period, double lowest_f0,
     double *time_axis, double *coarse_time_axis, double *coarse_f0,
     double *coarse_vuv) {
@@ -229,7 +230,7 @@ static void GetTemporalParametersForTimeBase(const double *f0, int f0_length,
   // the array 'coarse_time_axis' is supposed to have 'f0_length + 1' positions
   for (int i = 0; i < f0_length; ++i) {
     coarse_time_axis[i] = i * frame_period;
-    coarse_f0[i] = f0[i] < lowest_f0 ? 0.0 : f0[i];
+    coarse_f0[i] = f0[i].item<double>() < lowest_f0 ? 0.0 : f0[i].item<double>();
     coarse_vuv[i] = coarse_f0[i] == 0.0 ? 0.0 : 1.0;
   }
   coarse_time_axis[f0_length] = f0_length * frame_period;
@@ -284,7 +285,7 @@ static int GetPulseLocationsForTimeBase(const double *interpolated_f0,
   return number_of_pulses;
 }
 
-static int GetTimeBase(const double *f0, int f0_length, int fs,
+static int GetTimeBase(const torch::Tensor& f0, int f0_length, int fs,
     double frame_period, int y_length, double lowest_f0,
     double *pulse_locations, int *pulse_locations_index,
     double *pulse_locations_time_shift, double *interpolated_vuv) {
@@ -335,9 +336,9 @@ static void GetDCRemover(int fft_size, double *dc_remover) {
 
 }  // namespace
 
-void Synthesis(const double *f0, int f0_length,
-    const double * const *spectrogram, const double * const *aperiodicity,
-    int fft_size, double frame_period, int fs, int y_length, double *y) {
+void Synthesis(const torch::Tensor& f0, int f0_length,
+    const torch::Tensor& spectrogram, const torch::Tensor& aperiodicity,
+    int fft_size, double frame_period, int fs, int y_length, std::vector<double>& y) {
   randn_reseed();
 
   double *impulse_response = new double[fft_size];
@@ -365,7 +366,8 @@ void Synthesis(const double *f0, int f0_length,
   frame_period /= 1000.0;
   int noise_size;
   int index, offset, lower_limit, upper_limit;
-  for (int i = 0; i < number_of_pulses; ++i) {
+  
+  for (int i : tqdm::range(number_of_pulses)) {
     noise_size = pulse_locations_index[MyMinInt(number_of_pulses - 1, i + 1)] -
       pulse_locations_index[i];
 

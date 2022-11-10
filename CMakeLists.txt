@@ -15,6 +15,11 @@ cmake_minimum_required(VERSION 3.0)
 option(WORLD_BUILD_TESTS "Set to ON to build tests" OFF)
 option(WORLD_BUILD_EXAMPLES "Set to ON to build examples" ON)
 
+# Adding Torch to the project
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/modules/libtorch")
+find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
 # use git version as library version
 find_package(Git QUIET)
 if (Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
@@ -44,6 +49,8 @@ add_library(world STATIC
         src/world/stonemask.h
         src/world/synthesis.h
         src/world/synthesisrealtime.h
+        src/ext/tqdm.h
+        src/ext/utils.h
         src/cheaptrick.cpp
         src/codec.cpp
         src/common.cpp
@@ -63,6 +70,9 @@ add_library(world_tool STATIC
         tools/audioio.cpp
         tools/parameterio.cpp
         )
+
+target_compile_features(world PRIVATE cxx_std_20)
+target_link_libraries(world PUBLIC "${TORCH_LIBRARIES}")
 
 add_library(world::core ALIAS world)
 add_library(world::tool ALIAS world_tool)

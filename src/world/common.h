@@ -6,6 +6,9 @@
 #ifndef WORLD_COMMON_H_
 #define WORLD_COMMON_H_
 
+#include <vector>
+#include <torch/torch.h>
+
 #include "world/fft.h"
 #include "world/macrodefinitions.h"
 

@@ -19,7 +19,9 @@ namespace {
 // This value means the frame/frequency index is aperiodic.
 //-----------------------------------------------------------------------------
 static void InitializeAperiodicity(int f0_length, int fft_size,
-    double **aperiodicity) {
+    torch::Tensor& aperiodicity) {
+  aperiodicity = torch::zeros({f0_length, fft_size});
+	
   for (int i = 0; i < f0_length; ++i)
     for (int j = 0; j < fft_size / 2 + 1; ++j)
       aperiodicity[i][j] = 1.0 - world::kMySafeGuardMinimum;
@@ -28,12 +30,12 @@ static void InitializeAperiodicity(int f0_length, int fft_size,
 //-----------------------------------------------------------------------------
 // This function identifies whether this frame is voiced or unvoiced.
 //-----------------------------------------------------------------------------
-static int CheckVUV(const double *coarse_aperiodicity,
+static int CheckVUV(const torch::Tensor& coarse_aperiodicity,
     int number_of_aperiodicities, double *tmp_aperiodicity) {
   double tmp = 0.0;
   for (int i = 0; i < number_of_aperiodicities; ++i) {
-    tmp += coarse_aperiodicity[i];
-    tmp_aperiodicity[i + 1] = coarse_aperiodicity[i];
+    tmp += coarse_aperiodicity[i].item<double>();
+    tmp_aperiodicity[i + 1] = coarse_aperiodicity[i].item<double>();
   }
   tmp /= number_of_aperiodicities;
 
@@ -45,12 +47,12 @@ static int CheckVUV(const double *coarse_aperiodicity,
 //-----------------------------------------------------------------------------
 static void GetAperiodicity(const double *coarse_frequency_axis,
     const double *coarse_aperiodicity, int number_of_aperiodicities,
-    const double *frequency_axis, int fft_size, double *aperiodicity) {
+    const double *frequency_axis, int fft_size, const torch::Tensor& aperiodicity) {
   interp1(coarse_frequency_axis, coarse_aperiodicity,
       number_of_aperiodicities + 2, frequency_axis, fft_size / 2 + 1,
-      aperiodicity);
+      aperiodicity.data_ptr<double>());
   for (int i = 0; i <= fft_size / 2; ++i)
-    aperiodicity[i] = pow(10.0, aperiodicity[i] / 20.0);
+    aperiodicity[i] = pow(10.0, aperiodicity[i].item<double>() / 20.0);
 }
 
 //-----------------------------------------------------------------------------
@@ -235,8 +237,8 @@ void CodeAperiodicity(const double * const *aperiodicity, int f0_length,
   delete[] log_aperiodicity;
 }
 
-void DecodeAperiodicity(const double * const *coded_aperiodicity,
-    int f0_length, int fs, int fft_size, double **aperiodicity) {
+void DecodeAperiodicity(const torch::Tensor& coded_aperiodicity,
+    int f0_length, int fs, int fft_size, torch::Tensor& aperiodicity) {
   InitializeAperiodicity(f0_length, fft_size, aperiodicity);
   int number_of_aperiodicities = GetNumberOfAperiodicities(fs);
   double *frequency_axis = new double[fft_size / 2 + 1];

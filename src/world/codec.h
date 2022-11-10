@@ -6,6 +6,7 @@
 #ifndef WORLD_CODEC_H_
 #define WORLD_CODEC_H_
 
+#include <torch/torch.h>
 #include "world/macrodefinitions.h"
 
 WORLD_BEGIN_C_DECLS
@@ -50,8 +51,8 @@ void CodeAperiodicity(const double * const *aperiodicity, int f0_length,
 // Output:
 //   aperiodicity       : Decoded aperiodicity
 //-----------------------------------------------------------------------------
-void DecodeAperiodicity(const double * const *coded_aperiodicity,
-  int f0_length, int fs, int fft_size, double **aperiodicity);
+void DecodeAperiodicity(const torch::Tensor& coded_aperiodicity,
+  int f0_length, int fs, int fft_size, torch::Tensor& aperiodicity);
 
 //-----------------------------------------------------------------------------
 // CodeSpectralEnvelope codes the spectral envelope.
