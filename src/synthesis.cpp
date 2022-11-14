@@ -316,7 +316,7 @@ static int GetTimeBase(const torch::Tensor& f0, int f0_length, int fs,
   delete[] coarse_time_axis;
   delete[] time_axis;
   delete[] interpolated_f0;
-
+  
   return number_of_pulses;
 }
 

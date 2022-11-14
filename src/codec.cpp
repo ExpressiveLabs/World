@@ -25,6 +25,8 @@ static void InitializeAperiodicity(int f0_length, int fft_size,
   for (int i = 0; i < f0_length; ++i)
     for (int j = 0; j < fft_size / 2 + 1; ++j)
       aperiodicity[i][j] = 1.0 - world::kMySafeGuardMinimum;
+	
+  aperiodicity.to(c10::kDouble);
 }
 
 //-----------------------------------------------------------------------------
@@ -50,7 +52,7 @@ static void GetAperiodicity(const double *coarse_frequency_axis,
     const double *frequency_axis, int fft_size, const torch::Tensor& aperiodicity) {
   interp1(coarse_frequency_axis, coarse_aperiodicity,
       number_of_aperiodicities + 2, frequency_axis, fft_size / 2 + 1,
-      aperiodicity.data_ptr<double>());
+      aperiodicity.to(c10::kDouble).data_ptr<double>());
   for (int i = 0; i <= fft_size / 2; ++i)
     aperiodicity[i] = pow(10.0, aperiodicity[i].item<double>() / 20.0);
 }
