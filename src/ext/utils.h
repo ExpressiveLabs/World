@@ -15,13 +15,18 @@
 
 #include <cassert>      // assert
 #include <cstddef>      // ptrdiff_t, size_t
-#include <unistd.h>     // STDERR_FILENO
+#ifdef IS_WIN
+	#include <io.h>
+	#include <WinSock2.h>
+#else
+	#include <unistd.h>     // STDERR_FILENO
+	#include <poll.h>       // poll
+#endif
 #include <iterator>     // iterator
 #include <type_traits>  // is_pointer, ...
 #include <atomic>       // atomic
 #include <cstring>      // strlen
 #include <cerrno>       // EAGAIN
-#include <poll.h>       // poll
 
 /** TODO: port from python
  * colorama win
@@ -47,7 +52,7 @@
 
 namespace tqdm {
 
-template <typename _Iterator>
+template <typename Iterator>
 /**
 Wrapper for pointers and std containter iterators.
 @author Casper da Costa-Luis
@@ -55,14 +60,14 @@ Wrapper for pointers and std containter iterators.
 class MyIteratorWrapper
     : public std::iterator<
           std::forward_iterator_tag,
-          typename std::iterator_traits<_Iterator>::value_type> {
-  mutable _Iterator p;  // TODO: remove this mutable
+          typename std::iterator_traits<Iterator>::value_type> {
+  mutable Iterator p;  // TODO: remove this mutable
 
 public:
   // already done by std::iterator
-  typedef typename std::iterator_traits<_Iterator>::value_type value_type;
+  typedef typename std::iterator_traits<Iterator>::value_type value_type;
 
-  explicit MyIteratorWrapper(_Iterator x) : p(x) {}
+  explicit MyIteratorWrapper(Iterator x) : p(x) {}
   // default construct gives end
   MyIteratorWrapper() : p(nullptr) {}
   explicit MyIteratorWrapper(const MyIteratorWrapper &mit) : p(mit.p) {}
@@ -120,8 +125,8 @@ public:
     return *p;
   }
   // @return the underlying iterator
-  _Iterator &get() { return p; }
-  const _Iterator &get() const { return p; }
+  Iterator &get() { return p; }
+  const Iterator &get() const { return p; }
   // TODO: const _Iterator &get() const { return p; }, etc ...
   //
   void swap(MyIteratorWrapper &other) noexcept { std::swap(p, other.p); }
@@ -134,7 +139,7 @@ public:
   // const {
   //   return MyIteratorWrapper<const _Iterator>(p);
   // }
-  template <typename = typename std::is_pointer<_Iterator>>
+  template <typename = typename std::is_pointer<Iterator>>
   explicit operator bool() const {
     return p != nullptr;
   }
@@ -204,7 +209,11 @@ static void wait_for_write(int fd) {
   struct pollfd pfd;
   pfd.fd = fd;
   pfd.events = POLLOUT;
-  (void)::poll(&pfd, 1, -1);
+	#ifdef IS_WIN
+		(void)::WSAPoll(&pfd, 1, -1);
+	#else
+  		(void)::poll(&pfd, 1, -1);
+	#endif
 }
 
 // Write a buffer fully or not at all.
@@ -214,7 +223,7 @@ bool write_harder(int fd, const char *buf, size_t len) {
   bool did_anything = false;
 
   while (len) {
-    ssize_t res = ::write(fd, buf, len);
+    size_t res = ::write(fd, buf, len);
     if (res == -1) {
       if (errno == EAGAIN) {
         if (!did_anything) {
