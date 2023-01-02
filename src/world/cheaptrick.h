@@ -7,6 +7,7 @@
 #define WORLD_CHEAPTRICK_H_
 
 #include "world/macrodefinitions.h"
+#include <torch/torch.h>
 
 WORLD_BEGIN_C_DECLS
 
@@ -36,8 +37,8 @@ typedef struct {
 //   spectrogram        : Spectrogram estimated by CheapTrick.
 //-----------------------------------------------------------------------------
 void CheapTrick(const double *x, int x_length, int fs,
-    const double *temporal_positions, const double *f0, int f0_length,
-    const CheapTrickOption *option, double **spectrogram);
+    const double *temporal_positions, const torch::Tensor& f0, int f0_length,
+    const CheapTrickOption *option, const torch::Tensor& spectrogram);
 
 //-----------------------------------------------------------------------------
 // InitializeCheapTrickOption allocates the memory to the struct and sets the

@@ -132,8 +132,8 @@ void InitializeForwardRealFFT(int fft_size, ForwardRealFFT *forward_real_fft) {
 
 void DestroyForwardRealFFT(ForwardRealFFT *forward_real_fft) {
   fft_destroy_plan(forward_real_fft->forward_fft);
-  delete[] forward_real_fft->spectrum;
-  delete[] forward_real_fft->waveform;
+//  delete[] forward_real_fft->spectrum;
+//  delete[] forward_real_fft->waveform;
 }
 
 void InitializeInverseRealFFT(int fft_size, InverseRealFFT *inverse_real_fft) {

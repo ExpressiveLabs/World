@@ -7,6 +7,7 @@
 #define WORLD_D4C_H_
 
 #include "world/macrodefinitions.h"
+#include <torch/torch.h>
 
 WORLD_BEGIN_C_DECLS
 
@@ -33,8 +34,8 @@ typedef struct {
 //   aperiodicity  : Aperiodicity estimated by D4C.
 //-----------------------------------------------------------------------------
 void D4C(const double *x, int x_length, int fs,
-    const double *temporal_positions, const double *f0, int f0_length,
-    int fft_size, const D4COption *option, double **aperiodicity);
+    const double *temporal_positions, const torch::Tensor& f0, int f0_length,
+    int fft_size, const D4COption *option, const torch::Tensor& aperiodicity);
 
 //-----------------------------------------------------------------------------
 // InitializeD4COption allocates the memory to the struct and sets the

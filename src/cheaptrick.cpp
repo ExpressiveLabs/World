@@ -198,8 +198,8 @@ double GetF0FloorForCheapTrick(int fs, int fft_size) {
 }
 
 void CheapTrick(const double *x, int x_length, int fs,
-    const double *temporal_positions, const double *f0, int f0_length,
-    const CheapTrickOption *option, double **spectrogram) {
+    const double *temporal_positions, const torch::Tensor& f0, int f0_length,
+    const CheapTrickOption *option, const torch::Tensor& spectrogram) {
   int fft_size = option->fft_size;
 
   randn_reseed();
@@ -214,17 +214,18 @@ void CheapTrick(const double *x, int x_length, int fs,
 
   double current_f0;
   for (int i = 0; i < f0_length; ++i) {
-    current_f0 = f0[i] <= f0_floor ? world::kDefaultF0 : f0[i];
+	  auto val = f0.index({i}).item<double>();
+    current_f0 = val <= f0_floor ? world::kDefaultF0 : val;
     CheapTrickGeneralBody(x, x_length, fs, current_f0, fft_size,
         temporal_positions[i], option->q1, &forward_real_fft,
         &inverse_real_fft, spectral_envelope);
     for (int j = 0; j <= fft_size / 2; ++j)
-      spectrogram[i][j] = spectral_envelope[j];
+      spectrogram.index({i, j}) = spectral_envelope[j];
   }
 
   DestroyForwardRealFFT(&forward_real_fft);
   DestroyInverseRealFFT(&inverse_real_fft);
-  delete[] spectral_envelope;
+//  delete[] spectral_envelope;
 }
 
 void InitializeCheapTrickOption(int fs, CheapTrickOption *option) {
