@@ -5,17 +5,17 @@
 //
 // Coder/decoder functions for the spectral envelope and aperiodicity.
 //-----------------------------------------------------------------------------
-#include "world/codec.h"
+#include "TorchWorld/codec.h"
 
 #include <math.h>
 
-#include "world/constantnumbers.h"
-#include "world/fft.h"
-#include "world/matlabfunctions.h"
+#include "TorchWorld/constantnumbers.h"
+#include "TorchWorld/fft.h"
+#include "TorchWorld/matlabfunctions.h"
 
 namespace {
 //-----------------------------------------------------------------------------
-// Aperiodicity is initialized by the value 1.0 - world::kMySafeGuardMinimum.
+// Aperiodicity is initialized by the value 1.0 - TorchWorld::kMySafeGuardMinimum.
 // This value means the frame/frequency index is aperiodic.
 //-----------------------------------------------------------------------------
 static void InitializeAperiodicity(int f0_length, int fft_size,

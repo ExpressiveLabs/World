@@ -5,13 +5,13 @@
 //
 // F0 estimation based on DIO (Distributed Inline-filter Operation).
 //-----------------------------------------------------------------------------
-#include "world/dio.h"
+#include "TorchWorld/dio.h"
 
 #include <math.h>
 
-#include "world/common.h"
-#include "world/constantnumbers.h"
-#include "world/matlabfunctions.h"
+#include "TorchWorld/common.h"
+#include "TorchWorld/constantnumbers.h"
+#include "TorchWorld/matlabfunctions.h"
 
 //-----------------------------------------------------------------------------
 // struct for GetFourZeroCrossingIntervals()

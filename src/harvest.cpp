@@ -5,14 +5,14 @@
 //
 // F0 estimation based on Harvest.
 //-----------------------------------------------------------------------------
-#include "world/harvest.h"
+#include "TorchWorld/harvest.h"
 
 #include <math.h>
 
-#include "world/common.h"
-#include "world/constantnumbers.h"
-#include "world/fft.h"
-#include "world/matlabfunctions.h"
+#include "TorchWorld/common.h"
+#include "TorchWorld/constantnumbers.h"
+#include "TorchWorld/fft.h"
+#include "TorchWorld/matlabfunctions.h"
 
 //-----------------------------------------------------------------------------
 // struct for RawEventByHarvest()

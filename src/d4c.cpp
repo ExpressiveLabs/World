@@ -5,14 +5,14 @@
 //
 // Band-aperiodicity estimation on the basis of the idea of D4C.
 //-----------------------------------------------------------------------------
-#include "world/d4c.h"
+#include "TorchWorld/d4c.h"
 
 #include <math.h>
 #include <algorithm>  // for std::sort()
 
-#include "world/common.h"
-#include "world/constantnumbers.h"
-#include "world/matlabfunctions.h"
+#include "TorchWorld/common.h"
+#include "TorchWorld/constantnumbers.h"
+#include "TorchWorld/matlabfunctions.h"
 
 namespace {
 //-----------------------------------------------------------------------------

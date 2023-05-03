@@ -46,6 +46,6 @@ namespace world {
   const double kFloorFrequency = 40.0;
   const double kCeilFrequency = 20000.0;
 
-}  // namespace world
+}  // namespace TorchWorld
 
 #endif  // WORLD_CONSTANT_NUMBERS_H_

@@ -95,7 +95,7 @@ namespace {
      *
      *    @param x : the signal samples
      *    @param x_length : the number of samples
-     *    @param world_parameters : the world structure which is going to contains the F0 values (double format)
+     *    @param world_parameters : the TorchWorld structure which is going to contains the F0 values (double format)
      *     in the f0 structure field
      */
     void F0Estimation(double *x, int x_length, WorldParameters *world_parameters)
@@ -114,8 +114,8 @@ namespace {
         // If you want to obtain the accurate result, speed should be set to 1.
         option.speed = 1;
 
-        // You should not set option.f0_floor to under world::kFloorF0.
-        // If you want to analyze such low F0 speech, please change world::kFloorF0.
+        // You should not set option.f0_floor to under TorchWorld::kFloorF0.
+        // If you want to analyze such low F0 speech, please change TorchWorld::kFloorF0.
         // Processing speed may sacrify, provided that the FFT length changes.
         option.f0_floor = 71.0;
 
@@ -157,7 +157,7 @@ namespace {
      *
      *    @param x : the signal samples
      *    @param x_length : the number of samples
-     *    @param world_parameters : the world structure which is going to contains the spectrogram (double values)
+     *    @param world_parameters : the TorchWorld structure which is going to contains the spectrogram (double values)
      *    in the spectrogram structure field
      */
     void SpectralEnvelopeEstimation(double *x, int x_length,
@@ -202,7 +202,7 @@ namespace {
      *
      *    @param x : the signal samples
      *    @param x_length : the number of samples
-     *    @param world_parameters : the world structure which is going to contains the aperidicity (double values)
+     *    @param world_parameters : the TorchWorld structure which is going to contains the aperidicity (double values)
      *    in the aperiodicity structure field
      */
     void AperiodicityEstimation(double *x, int x_length,

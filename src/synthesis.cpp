@@ -6,14 +6,14 @@
 // Voice synthesis based on f0, spectrogram and aperiodicity.
 // forward_real_fft, inverse_real_fft and minimum_phase are used to speed up.
 //-----------------------------------------------------------------------------
-#include "world/synthesis.h"
+#include "TorchWorld/synthesis.h"
 
 #include <math.h>
 
 #include <ext/tqdm.h>
-#include "world/common.h"
-#include "world/constantnumbers.h"
-#include "world/matlabfunctions.h"
+#include "TorchWorld/common.h"
+#include "TorchWorld/constantnumbers.h"
+#include "TorchWorld/matlabfunctions.h"
 
 namespace {
 

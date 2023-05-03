@@ -16,12 +16,12 @@
 // because forward FFT and inverse FFT can run in one step.
 //
 //-----------------------------------------------------------------------------
-#include "world/common.h"
+#include "TorchWorld/common.h"
 
 #include <math.h>
 
-#include "world/constantnumbers.h"
-#include "world/matlabfunctions.h"
+#include "TorchWorld/constantnumbers.h"
+#include "TorchWorld/matlabfunctions.h"
 
 namespace {
 static void SetParametersForLinearSmoothing(int boundary, int fft_size, int fs,

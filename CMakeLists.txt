@@ -33,22 +33,22 @@ else ()
     set(git_version 0)
 endif ()
 
-project(WORLD LANGUAGES CXX VERSION 1.0.${git_version})
+project(WORLD_TCH LANGUAGES CXX VERSION 1.0.${git_version})
 
-add_library(world STATIC
-        src/world/cheaptrick.h
-        src/world/codec.h
-        src/world/common.h
-        src/world/constantnumbers.h
-        src/world/d4c.h
-        src/world/dio.h
-        src/world/fft.h
-        src/world/harvest.h
-        src/world/macrodefinitions.h
-        src/world/matlabfunctions.h
-        src/world/stonemask.h
-        src/world/synthesis.h
-        src/world/synthesisrealtime.h
+add_library(world_tch STATIC
+        src/TorchWorld/cheaptrick.h
+        src/TorchWorld/codec.h
+        src/TorchWorld/common.h
+        src/TorchWorld/constantnumbers.h
+        src/TorchWorld/d4c.h
+        src/TorchWorld/dio.h
+        src/TorchWorld/fft.h
+        src/TorchWorld/harvest.h
+        src/TorchWorld/macrodefinitions.h
+        src/TorchWorld/matlabfunctions.h
+        src/TorchWorld/stonemask.h
+        src/TorchWorld/synthesis.h
+        src/TorchWorld/synthesisrealtime.h
         src/ext/tqdm.h
         src/ext/utils.h
         src/cheaptrick.cpp
@@ -64,22 +64,22 @@ add_library(world STATIC
         src/synthesisrealtime.cpp
         )
 
-add_library(world_tool STATIC
+add_library(world_tool_tch STATIC
         tools/audioio.h
         tools/parameterio.h
         tools/audioio.cpp
         tools/parameterio.cpp
         )
 
-target_compile_features(world PRIVATE cxx_std_20)
-target_link_libraries(world PUBLIC "${TORCH_LIBRARIES}")
+target_compile_features(world_tch PRIVATE cxx_std_20)
+target_link_libraries(world_tch PUBLIC "${TORCH_LIBRARIES}")
 
-add_library(world::core ALIAS world)
-add_library(world::tool ALIAS world_tool)
+add_library(TorchWorld::core ALIAS world_tch)
+add_library(TorchWorld::tool ALIAS world_tool_tch)
 
-target_link_libraries(world_tool PUBLIC world)
+target_link_libraries(world_tool_tch PUBLIC world_tch)
 
-foreach (lib world world_tool)
+foreach (lib world_tch world_tool_tch)
     target_include_directories(${lib} PUBLIC $<INSTALL_INTERFACE:include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> PRIVATE src)
     set_target_properties(${lib}
@@ -91,12 +91,12 @@ foreach (lib world world_tool)
 endforeach ()
 
 include(GNUInstallDirs)
-install(TARGETS world world_tool
+install(TARGETS world_tch world_tool_tch
         EXPORT world-export
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
-install(DIRECTORY src/world DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY src/TorchWorld DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(world-config.cmake.in
@@ -117,14 +117,14 @@ install(EXPORT world-export
         NAMESPACE world::
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/world
         )
-export(TARGETS world world_tool NAMESPACE world::
+export(TARGETS world_tch world_tool_tch NAMESPACE world::
         FILE ${PROJECT_BINARY_DIR}/world-targets.cmake)
 
 if (WORLD_BUILD_TESTS)
     add_executable(tests test/test.cpp)
     target_link_libraries(tests
-            PRIVATE world
-            PRIVATE world_tool
+            PRIVATE world_tch
+            PRIVATE world_tool_tch
             )
     target_include_directories(tests
             PRIVATE src

@@ -99,7 +99,7 @@ void F0EstimationDio(double *x, int x_length,
   // If you want to obtain the accurate result, speed should be set to 1.
   option.speed = 1;
 
-  // You can set the f0_floor below world::kFloorF0.
+  // You can set the f0_floor below TorchWorld::kFloorF0.
   option.f0_floor = 40.0;
 
   // You can give a positive real number as the threshold.
@@ -141,7 +141,7 @@ void F0EstimationHarvest(double *x, int x_length,
   // But the estimation is carried out with 1-ms frame shift.
   option.frame_period = world_parameters->frame_period;
 
-  // You can set the f0_floor below world::kFloorF0.
+  // You can set the f0_floor below TorchWorld::kFloorF0.
   option.f0_floor = 40.0;
 
   // Parameters setting and memory allocation.

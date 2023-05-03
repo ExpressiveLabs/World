@@ -12,7 +12,7 @@
 //   The functions wavread() and wavwrite() were removed to the /src.
 //   they were moved to the test/audioio.cpp. (2016/01/28)
 //-----------------------------------------------------------------------------
-#include "world/matlabfunctions.h"
+#include "TorchWorld/matlabfunctions.h"
 
 #include <math.h>
 #include <stdint.h>

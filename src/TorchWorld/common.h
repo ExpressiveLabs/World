@@ -109,7 +109,7 @@ void NuttallWindow(int y_length, double *y);
 
 //-----------------------------------------------------------------------------
 // GetSafeAperiodicity() limit the range of aperiodicity from 0.001 to
-// 0.999999999999 (1 - world::kMySafeGuardMinimum).
+// 0.999999999999 (1 - TorchWorld::kMySafeGuardMinimum).
 //-----------------------------------------------------------------------------
 inline double GetSafeAperiodicity(double x) {
   return MyMaxDouble(0.001, MyMinDouble(0.999999999999, x));

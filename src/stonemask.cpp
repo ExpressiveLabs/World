@@ -6,14 +6,14 @@
 // F0 estimation based on instantaneous frequency.
 // This method is carried out by using the output of Dio().
 //-----------------------------------------------------------------------------
-#include "world/stonemask.h"
+#include "TorchWorld/stonemask.h"
 
 #include <math.h>
 
-#include "world/common.h"
-#include "world/constantnumbers.h"
-#include "world/fft.h"
-#include "world/matlabfunctions.h"
+#include "TorchWorld/common.h"
+#include "TorchWorld/constantnumbers.h"
+#include "TorchWorld/fft.h"
+#include "TorchWorld/matlabfunctions.h"
 
 namespace {
 //-----------------------------------------------------------------------------
