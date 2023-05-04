@@ -28,8 +28,8 @@
 // Some usefull macros and defines.
 //-----------------------------------------------------------------------------
 
-#ifndef WORLD_MACRODEFINITIONS_H_
-#define WORLD_MACRODEFINITIONS_H_
+#ifndef TORCHWORLD_MACRODEFINITIONS_H_
+#define TORCHWORLD_MACRODEFINITIONS_H_
 
 //
 // @file macrodefinitions.h
@@ -48,7 +48,7 @@
 //
 
 //
-// @def WORLD_BEGIN_C_DECLS
+// @def TW_WORLD_BEGIN_C_DECLS
 // Start block for enclosing C code for inclusion in C++ programs.
 // This allows C++ programs to include the C header files of the World
 // engine. @code extern "C" { @endcode
@@ -56,21 +56,21 @@
 //
 
 //
-// @def WORLD_END_C_DECLS
+// @def TW_WORLD_END_C_DECLS
 // End block for enclosing C code for inclusion in C++ programs.
 // This allows C++ programs to include the C header files of the World
 // engine. @code } @endcode
 // @hideinitializer
 //
 
-#undef  WORLD_BEGIN_C_DECLS
-#undef  WORLD_END_C_DECLS
+#undef  TW_WORLD_BEGIN_C_DECLS
+#undef  TW_WORLD_END_C_DECLS
 #ifdef __cplusplus
-#  define WORLD_BEGIN_C_DECLS extern "C" {
-#  define WORLD_END_C_DECLS }
+#  define TW_WORLD_BEGIN_C_DECLS extern "C" {
+#  define TW_WORLD_END_C_DECLS }
 #else  // !__cplusplus
-#  define WORLD_BEGIN_C_DECLS
-#  define WORLD_END_C_DECLS
+#  define TW_WORLD_BEGIN_C_DECLS
+#  define TW_WORLD_END_C_DECLS
 #endif  // __cplusplus
 
 //

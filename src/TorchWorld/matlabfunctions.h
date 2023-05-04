@@ -3,13 +3,14 @@
 // Author: mmorise [at] meiji.ac.jp (Masanori Morise)
 // Last update: 2021/02/15
 //-----------------------------------------------------------------------------
-#ifndef WORLD_MATLABFUNCTIONS_H_
-#define WORLD_MATLABFUNCTIONS_H_
+#ifndef TORCHWORLD_MATLABFUNCTIONS_H_
+#define TORCHWORLD_MATLABFUNCTIONS_H_
 
-#include "world/common.h"
-#include "world/macrodefinitions.h"
+#include "TorchWorld/common.h"
+#include "TorchWorld/macrodefinitions.h"
 
-WORLD_BEGIN_C_DECLS
+namespace tw {
+    TW_WORLD_BEGIN_C_DECLS
 
 //-----------------------------------------------------------------------------
 // fftshift() swaps the left and right halves of input vector.
@@ -25,7 +26,7 @@ WORLD_BEGIN_C_DECLS
 // Caution:
 //   Lengths of index and edges must be the same.
 //-----------------------------------------------------------------------------
-void fftshift(const double *x, int x_length, double *y);
+    void fftshift(const double *x, int x_length, double *y);
 
 //-----------------------------------------------------------------------------
 // histc() counts the number of values in vector x that fall between the
@@ -45,8 +46,8 @@ void fftshift(const double *x, int x_length, double *y);
 // Caution:
 //   Lengths of index and edges must be the same.
 //-----------------------------------------------------------------------------
-void histc(const double *x, int x_length, const double *edges,
-  int edges_length, int *index);
+    void histc(const double *x, int x_length, const double *edges,
+               int edges_length, int *index);
 
 //-----------------------------------------------------------------------------
 // interp1() interpolates to find yi, the values of the underlying function Y
@@ -63,8 +64,8 @@ void histc(const double *x, int x_length, const double *edges,
 // Output:
 //   yi         : Interpolated vector
 //-----------------------------------------------------------------------------
-void interp1(const double *x, const double *y, int x_length, const double *xi,
-  int xi_length, double *yi);
+    void interp1(const double *x, const double *y, int x_length, const double *xi,
+                 int xi_length, double *yi);
 
 //-----------------------------------------------------------------------------
 // decimate() carries out down sampling by both IIR and FIR filters.
@@ -78,7 +79,7 @@ void interp1(const double *x, const double *y, int x_length, const double *xi,
 // Output:
 //   y          : Output signal
 //-----------------------------------------------------------------------------
-void decimate(const double *x, int x_length, int r, double *y);
+    void decimate(const double *x, int x_length, int r, double *y);
 
 //-----------------------------------------------------------------------------
 // matlab_round() calculates rounding.
@@ -89,7 +90,7 @@ void decimate(const double *x, int x_length, int r, double *y);
 // Output:
 //   y    : Rounded value
 //-----------------------------------------------------------------------------
-int matlab_round(double x);
+    int matlab_round(double x);
 
 //-----------------------------------------------------------------------------
 // diff() calculates differences and approximate derivatives
@@ -102,7 +103,7 @@ int matlab_round(double x);
 // Output:
 //   y          : Output signal
 //-----------------------------------------------------------------------------
-void diff(const double *x, int x_length, double *y);
+    void diff(const double *x, int x_length, double *y);
 
 //-----------------------------------------------------------------------------
 // interp1Q() is the special case of interp1().
@@ -122,8 +123,8 @@ void diff(const double *x, int x_length, double *y);
 // Caution:
 //   Length of xi and yi must be the same.
 //-----------------------------------------------------------------------------
-void interp1Q(double x, double shift, const double *y, int x_length,
-  const double *xi, int xi_length, double *yi);
+    void interp1Q(double x, double shift, const double *y, int x_length,
+                  const double *xi, int xi_length, double *yi);
 
 //-----------------------------------------------------------------------------
 // randn() generates pseudorandom numbers based on xorshift method.
@@ -131,13 +132,13 @@ void interp1Q(double x, double shift, const double *y, int x_length,
 // Output:
 //   A generated pseudorandom number
 //-----------------------------------------------------------------------------
-double randn(void);
+    double randn(void);
 
 //-----------------------------------------------------------------------------
 // randn_reseed() forces to seed the pseudorandom generator using initial
 // values.
 //-----------------------------------------------------------------------------
-void randn_reseed(void);
+    void randn_reseed(void);
 
 //-----------------------------------------------------------------------------
 // fast_fftfilt() carries out the convolution on the frequency domain.
@@ -154,9 +155,9 @@ void randn_reseed(void);
 // Output:
 //   y                : Calculated result.
 //-----------------------------------------------------------------------------
-void fast_fftfilt(const double *x, int x_length, const double *h, int h_length,
-  int fft_size, const ForwardRealFFT *forward_real_fft,
-  const InverseRealFFT *inverse_real_fft, double *y);
+    void fast_fftfilt(const double *x, int x_length, const double *h, int h_length,
+                      int fft_size, const ForwardRealFFT *forward_real_fft,
+                      const InverseRealFFT *inverse_real_fft, double *y);
 
 //-----------------------------------------------------------------------------
 // matlab_std() calculates the standard deviation of the input vector.
@@ -168,8 +169,9 @@ void fast_fftfilt(const double *x, int x_length, const double *h, int h_length,
 // Output:
 //   Calculated standard deviation
 //-----------------------------------------------------------------------------
-double matlab_std(const double *x, int x_length);
+    double matlab_std(const double *x, int x_length);
 
-WORLD_END_C_DECLS
+    TW_WORLD_END_C_DECLS
+}
 
 #endif  // WORLD_MATLABFUNCTIONS_H_

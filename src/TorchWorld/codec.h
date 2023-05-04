@@ -3,13 +3,14 @@
 // Author: mmorise [at] meiji.ac.jp (Masanori Morise)
 // Last update: 2021/02/15
 //-----------------------------------------------------------------------------
-#ifndef WORLD_CODEC_H_
-#define WORLD_CODEC_H_
+#ifndef TORCHWORLD_CODEC_H_
+#define TORCHWORLD_CODEC_H_
 
 #include <torch/torch.h>
-#include "world/macrodefinitions.h"
+#include "TorchWorld/macrodefinitions.h"
 
-WORLD_BEGIN_C_DECLS
+namespace tw {
+    TW_WORLD_BEGIN_C_DECLS
 
 //-----------------------------------------------------------------------------
 // GetNumberOfAperiodicities provides the number of dimensions for aperiodicity
@@ -21,7 +22,7 @@ WORLD_BEGIN_C_DECLS
 // Output:
 //   Number of aperiodicities
 //-----------------------------------------------------------------------------
-int GetNumberOfAperiodicities(int fs);
+    int GetNumberOfAperiodicities(int fs);
 
 //-----------------------------------------------------------------------------
 // CodeAperiodicity codes the aperiodicity. The number of dimensions is
@@ -36,8 +37,8 @@ int GetNumberOfAperiodicities(int fs);
 // Output:
 //   coded_aperiodicity : Coded aperiodicity
 //-----------------------------------------------------------------------------
-void CodeAperiodicity(const double * const *aperiodicity, int f0_length,
-  int fs, int fft_size, double **coded_aperiodicity);
+    void CodeAperiodicity(const double *const *aperiodicity, int f0_length,
+                          int fs, int fft_size, double **coded_aperiodicity);
 
 //-----------------------------------------------------------------------------
 // DecodeAperiodicity decodes the coded aperiodicity.
@@ -51,8 +52,8 @@ void CodeAperiodicity(const double * const *aperiodicity, int f0_length,
 // Output:
 //   aperiodicity       : Decoded aperiodicity
 //-----------------------------------------------------------------------------
-void DecodeAperiodicity(const torch::Tensor& coded_aperiodicity,
-  int f0_length, int fs, int fft_size, torch::Tensor& aperiodicity);
+    void DecodeAperiodicity(const torch::Tensor &coded_aperiodicity,
+                            int f0_length, int fs, int fft_size, torch::Tensor &aperiodicity);
 
 //-----------------------------------------------------------------------------
 // CodeSpectralEnvelope codes the spectral envelope.
@@ -67,9 +68,9 @@ void DecodeAperiodicity(const torch::Tensor& coded_aperiodicity,
 // Output:
 //   coded_spectral_envelope
 //-----------------------------------------------------------------------------
-void CodeSpectralEnvelope(const double * const *spectrogram, int f0_length,
-  int fs, int fft_size, int number_of_dimensions,
-  double **coded_spectral_envelope);
+    void CodeSpectralEnvelope(const double *const *spectrogram, int f0_length,
+                              int fs, int fft_size, int number_of_dimensions,
+                              double **coded_spectral_envelope);
 
 //-----------------------------------------------------------------------------
 // DecodeSpectralEnvelope decodes the coded spectral envelope.
@@ -84,10 +85,12 @@ void CodeSpectralEnvelope(const double * const *spectrogram, int f0_length,
 // Output:
 //   spectrogram
 //-----------------------------------------------------------------------------
-void DecodeSpectralEnvelope(const double * const *coded_spectral_envelope,
-  int f0_length, int fs, int fft_size, int number_of_dimensions,
-  double **spectrogram);
+    void DecodeSpectralEnvelope(const double *const *coded_spectral_envelope,
+                                int f0_length, int fs, int fft_size, int number_of_dimensions,
+                                double **spectrogram);
 
-WORLD_END_C_DECLS
+
+    TW_WORLD_END_C_DECLS
+}
 
 #endif  // WORLD_CODEC_H_

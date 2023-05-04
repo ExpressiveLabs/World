@@ -1,85 +1,76 @@
 //-----------------------------------------------------------------------------
 // Copyright 2012 Masanori Morise
 // Author: mmorise [at] meiji.ac.jp (Masanori Morise)
-// Last update: 2021/02/15
+//
+// C++/Torch version of WORLD
+// Port by: Daniel Kamp (daniel [at] expressivelabs.net)
+// Last update: 2023/05/03
 //-----------------------------------------------------------------------------
-#ifndef WORLD_CHEAPTRICK_H_
-#define WORLD_CHEAPTRICK_H_
+#ifndef TORCHWORLD_CHEAPTRICK_H_
+#define TORCHWORLD_CHEAPTRICK_H_
 
-#include "world/macrodefinitions.h"
+#include <TorchWorld/macrodefinitions.h>
+#include <TorchWorld/common.h>
+
 #include <torch/torch.h>
+#include <utility>
 
-WORLD_BEGIN_C_DECLS
+namespace tw {
+    class CheapTrick {
+        struct Options {
+            double q1;
+            double f0_floor;
+            int fft_size;
+            int fs;
 
-//-----------------------------------------------------------------------------
-// Struct for CheapTrick
-//-----------------------------------------------------------------------------
-typedef struct {
-  double q1;
-  double f0_floor;
-  int fft_size;
-} CheapTrickOption;
+            explicit Options(int _fs);
+            void calcFFTSize();
+            [[nodiscard]] double getF0Floor() const;
+        };
 
-//-----------------------------------------------------------------------------
-// CheapTrick() calculates the spectrogram that consists of spectral envelopes
-// estimated by CheapTrick.
-//
-// Input:
-//   x                  : Input signal
-//   x_length           : Length of x
-//   fs                 : Sampling frequency
-//   temporal_positions : Time axis
-//   f0                 : F0 contour
-//   f0_length          : Length of F0 contour
-//   option             : Struct to order the parameter for CheapTrick
-//
-// Output:
-//   spectrogram        : Spectrogram estimated by CheapTrick.
-//-----------------------------------------------------------------------------
-void CheapTrick(const double *x, int x_length, int fs,
-    const double *temporal_positions, const torch::Tensor& f0, int f0_length,
-    const CheapTrickOption *option, const torch::Tensor& spectrogram);
+        public:
+            // TODO: Add more Torchifications (i.e. torch::Tensor instead of std::vector)
+            CheapTrick(std::shared_ptr<std::vector<double>> _x, int _x_length, std::shared_ptr<std::vector<double>> _temporal_positions,  const torch::Tensor &_f0, int _f0_length, const torch::Tensor &_spectrogram, const Options& _option) :
+                x(std::move(_x)),
+                x_length(_x_length),
+                temporal_positions(std::move(_temporal_positions)),
+                f0(_f0),
+                f0_length(_f0_length),
+                spectrogram(_spectrogram),
+                options(_option) {}
 
-//-----------------------------------------------------------------------------
-// InitializeCheapTrickOption allocates the memory to the struct and sets the
-// default parameters.
-//
-// Input:
-//   fs : Sampling frequency
-//
-// Output:
-//   option   : Struct for the optional parameter
-//-----------------------------------------------------------------------------
-void InitializeCheapTrickOption(int fs, CheapTrickOption *option);
+            ~CheapTrick() = default;
 
-//-----------------------------------------------------------------------------
-// GetFFTSizeForCheapTrick() calculates the FFT size based on the sampling
-// frequency and the lower limit of f0 (kFloorF0 defined in constantnumbers.h).
-//
-// Input:
-//   fs : Sampling frequency
-//   option : Option struct containing the lower f0 limit
-//
-// Output:
-//   FFT size
-//-----------------------------------------------------------------------------
-int GetFFTSizeForCheapTrick(int fs, const CheapTrickOption *option);
+            void run();
+            void initializeFFTs();
 
-//-----------------------------------------------------------------------------
-// GetF0FloorForCheapTrick() calculates actual lower f0 limit for CheapTrick
-// based on the sampling frequency and FFT size used. Whenever f0 is below
-// this threshold the spectrum will be analyzed as if the frame is unvoiced
-// (using kDefaultF0 defined in constantnumbers.h).
-//
-// Input:
-//   fs : Sampling frequency
-//   fft_size : FFT size
-//
-// Output:
-//   Lower f0 limit (Hz)
-//-----------------------------------------------------------------------------
-double GetF0FloorForCheapTrick(int fs, int fft_size);
+            void step();
 
-WORLD_END_C_DECLS
+            void applyWindowing();
+            void calculatePowerSpectrum();
+            void addNoise();
+            void smoothingWithRecovery();
 
-#endif  // WORLD_CHEAPTRICK_H_
+            void generateWindow(int half_window_length, std::vector<double>& window, std::vector<int>& base_index, std::vector<int>& safe_index) const;
+
+        private:
+            double current_f0 = 0.0;
+            double current_position = 0.0;
+
+            int x_length, f0_length;
+
+            std::shared_ptr<std::vector<double>> x = nullptr;
+            std::shared_ptr<std::vector<double>> temporal_positions = nullptr;
+            std::vector<double> spectral_envelope;
+
+            const torch::Tensor &f0;
+            const torch::Tensor &spectrogram;
+
+            ForwardRealFFT* forward_real_fft = nullptr;
+            InverseRealFFT* inverse_real_fft = nullptr;
+
+            const Options& options;
+    };
+}
+
+#endif  // TORCHWORLD_CHEAPTRICK_H_

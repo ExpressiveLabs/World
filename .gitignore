@@ -31,6 +31,22 @@ visualstudio2019/win/x64/Release/
 visualstudio2019/x64/Debug/
 visualstudio2019/x64/Release/
 
+CMakeFiles
+modules
+
+world.dir
+
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+
+cmake_install.cmake
+world-config.cmake
+world-config.cmake.in
+world-config-version.cmake
+world-targets.cmake
+
 # IntelliJ project files
 .idea
 *.iml

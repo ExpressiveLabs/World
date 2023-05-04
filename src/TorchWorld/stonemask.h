@@ -3,12 +3,13 @@
 // Author: mmorise [at] meiji.ac.jp (Masanori Morise)
 // Last update: 2021/02/15
 //-----------------------------------------------------------------------------
-#ifndef WORLD_STONEMASK_H_
-#define WORLD_STONEMASK_H_
+#ifndef TORCHWORLD_STONEMASK_H_
+#define TORCHWORLD_STONEMASK_H_
 
-#include "world/macrodefinitions.h"
+#include "TorchWorld/macrodefinitions.h"
 
-WORLD_BEGIN_C_DECLS
+namespace tw {
+    TW_WORLD_BEGIN_C_DECLS
 
 //-----------------------------------------------------------------------------
 // StoneMask() refines the estimated F0 by Dio()
@@ -24,10 +25,11 @@ WORLD_BEGIN_C_DECLS
 // Output:
 //   refined_f0             : Refined F0
 //-----------------------------------------------------------------------------
-void StoneMask(const double *x, int x_length, int fs,
-    const double *temporal_positions, const double *f0, int f0_length,
-    double *refined_f0);
+    void StoneMask(const double *x, int x_length, int fs,
+                   const double *temporal_positions, const double *f0, int f0_length,
+                   double *refined_f0);
 
-WORLD_END_C_DECLS
+    TW_WORLD_END_C_DECLS
+}
 
 #endif  // WORLD_STONEMASK_H_
