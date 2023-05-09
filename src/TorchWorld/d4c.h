@@ -75,7 +75,7 @@ namespace tw {
             torch::Tensor& f0;
             torch::Tensor& aperiodicity;
 
-            ForwardRealFFT* forward_real_fft = nullptr;
+            Common::ForwardRealFFT* forward_real_fft = nullptr;
 
             const Options& options;
     };

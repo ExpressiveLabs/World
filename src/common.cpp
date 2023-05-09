@@ -23,7 +23,7 @@
 #include "TorchWorld/constantnumbers.h"
 #include "TorchWorld/matlabfunctions.h"
 
-namespace tw {
+namespace tw::Common {
     static void SetParametersForLinearSmoothing(int boundary, int fft_size, int fs, double width, const double *power_spectrum, double *mirroring_spectrum, double *mirroring_segment, double *frequency_axis) {
         for (int i = 0; i < boundary; ++i) {
             mirroring_spectrum[i] = power_spectrum[boundary - i];
@@ -60,7 +60,7 @@ namespace tw {
             low_frequency_axis[i] = static_cast<double>(i) * fs / fft_size;
 
         int upper_limit_replica = upper_limit - 1;
-        interp1Q(f0 - low_frequency_axis[0], -static_cast<double>(fs) / fft_size, input, upper_limit + 1, low_frequency_axis, upper_limit_replica, low_frequency_replica);
+        MatlabFunctions::interp1Q(f0 - low_frequency_axis[0], -static_cast<double>(fs) / fft_size, input, upper_limit + 1, low_frequency_axis, upper_limit_replica, low_frequency_replica);
 
         for (int i = 0; i < upper_limit_replica; ++i) {
             output[i] = input[i] + low_frequency_replica[i];
@@ -84,11 +84,11 @@ namespace tw {
         double origin_of_mirroring_axis = -(boundary - 0.5) * fs / fft_size;
         double discrete_frequency_interval = static_cast<double>(fs) / fft_size;
 
-        interp1Q(origin_of_mirroring_axis, discrete_frequency_interval, mirroring_segment, fft_size / 2 + boundary * 2 + 1, frequency_axis, fft_size / 2 + 1, low_levels);
+        MatlabFunctions::interp1Q(origin_of_mirroring_axis, discrete_frequency_interval, mirroring_segment, fft_size / 2 + boundary * 2 + 1, frequency_axis, fft_size / 2 + 1, low_levels);
 
         for (int i = 0; i <= fft_size / 2; ++i) frequency_axis[i] += width;
 
-        interp1Q(origin_of_mirroring_axis, discrete_frequency_interval, mirroring_segment, fft_size / 2 + boundary * 2 + 1, frequency_axis, fft_size / 2 + 1, high_levels);
+        MatlabFunctions::interp1Q(origin_of_mirroring_axis, discrete_frequency_interval, mirroring_segment, fft_size / 2 + boundary * 2 + 1, frequency_axis, fft_size / 2 + 1, high_levels);
 
         for (int i = 0; i <= fft_size / 2; ++i) {
             output[i] = (high_levels[i] - low_levels[i]) / width;
@@ -116,8 +116,8 @@ namespace tw {
     void InitializeForwardRealFFT(int fft_size, ForwardRealFFT *forward_real_fft) {
         forward_real_fft->fft_size = fft_size;
         forward_real_fft->waveform = new double[fft_size];
-        forward_real_fft->spectrum = new fft_complex[fft_size];
-        forward_real_fft->forward_fft = fft_plan_dft_r2c_1d(fft_size, forward_real_fft->waveform, forward_real_fft->spectrum, TW_FFT_ESTIMATE);
+        forward_real_fft->spectrum = new FFT::fft_complex[fft_size];
+        forward_real_fft->forward_fft = FFT::fft_plan_dft_r2c_1d(fft_size, forward_real_fft->waveform, forward_real_fft->spectrum, TW_FFT_ESTIMATE);
     }
 
     void DestroyForwardRealFFT(ForwardRealFFT *forward_real_fft) {
@@ -129,8 +129,8 @@ namespace tw {
     void InitializeInverseRealFFT(int fft_size, InverseRealFFT *inverse_real_fft) {
         inverse_real_fft->fft_size = fft_size;
         inverse_real_fft->waveform = new double[fft_size];
-        inverse_real_fft->spectrum = new fft_complex[fft_size];
-        inverse_real_fft->inverse_fft = fft_plan_dft_c2r_1d(fft_size, inverse_real_fft->spectrum, inverse_real_fft->waveform, TW_FFT_ESTIMATE);
+        inverse_real_fft->spectrum = new FFT::fft_complex[fft_size];
+        inverse_real_fft->inverse_fft = FFT::fft_plan_dft_c2r_1d(fft_size, inverse_real_fft->spectrum, inverse_real_fft->waveform, TW_FFT_ESTIMATE);
     }
 
     void DestroyInverseRealFFT(InverseRealFFT *inverse_real_fft) {
@@ -141,9 +141,9 @@ namespace tw {
 
     void InitializeInverseComplexFFT(int fft_size, InverseComplexFFT *inverse_complex_fft) {
         inverse_complex_fft->fft_size = fft_size;
-        inverse_complex_fft->input = new fft_complex[fft_size];
-        inverse_complex_fft->output = new fft_complex[fft_size];
-        inverse_complex_fft->inverse_fft = fft_plan_dft_1d(fft_size, inverse_complex_fft->input, inverse_complex_fft->output, TW_FFT_BACKWARD, TW_FFT_ESTIMATE);
+        inverse_complex_fft->input = new FFT::fft_complex[fft_size];
+        inverse_complex_fft->output = new FFT::fft_complex[fft_size];
+        inverse_complex_fft->inverse_fft = FFT::fft_plan_dft_1d(fft_size, inverse_complex_fft->input, inverse_complex_fft->output, TW_FFT_BACKWARD, TW_FFT_ESTIMATE);
     }
 
     void DestroyInverseComplexFFT(InverseComplexFFT *inverse_complex_fft) {
@@ -155,10 +155,10 @@ namespace tw {
     void InitializeMinimumPhaseAnalysis(int fft_size, MinimumPhaseAnalysis *minimum_phase) {
         minimum_phase->fft_size = fft_size;
         minimum_phase->log_spectrum = new double[fft_size];
-        minimum_phase->minimum_phase_spectrum = new fft_complex[fft_size];
-        minimum_phase->cepstrum = new fft_complex[fft_size];
-        minimum_phase->inverse_fft = fft_plan_dft_r2c_1d(fft_size, minimum_phase->log_spectrum, minimum_phase->cepstrum, TW_FFT_ESTIMATE);
-        minimum_phase->forward_fft = fft_plan_dft_1d(fft_size, minimum_phase->cepstrum, minimum_phase->minimum_phase_spectrum, TW_FFT_FORWARD, TW_FFT_ESTIMATE);
+        minimum_phase->minimum_phase_spectrum = new FFT::fft_complex[fft_size];
+        minimum_phase->cepstrum = new FFT::fft_complex[fft_size];
+        minimum_phase->inverse_fft = FFT::fft_plan_dft_r2c_1d(fft_size, minimum_phase->log_spectrum, minimum_phase->cepstrum, TW_FFT_ESTIMATE);
+        minimum_phase->forward_fft = FFT::fft_plan_dft_1d(fft_size, minimum_phase->cepstrum, minimum_phase->minimum_phase_spectrum, TW_FFT_FORWARD, TW_FFT_ESTIMATE);
     }
 
     void GetMinimumPhaseSpectrum(const MinimumPhaseAnalysis *minimum_phase) {

@@ -19,7 +19,7 @@
 
 #include "world/constantnumbers.h"
 
-namespace tw {
+namespace tw::MatlabFunctions {
 //-----------------------------------------------------------------------------
 // FilterForDecimate() calculates the coefficients of low-pass filter and
 // carries out the filtering. This function is only used for decimate().
@@ -268,10 +268,8 @@ namespace tw {
         return tmp / 268435456.0 - 6.0;
     }
 
-    void fast_fftfilt(const double *x, int x_length, const double *h, int h_length,
-                      int fft_size, const ForwardRealFFT *forward_real_fft,
-                      const InverseRealFFT *inverse_real_fft, double *y) {
-        fft_complex *x_spectrum = new fft_complex[fft_size];
+    void fast_fftfilt(const double *x, int x_length, const double *h, int h_length, int fft_size, const Common::ForwardRealFFT *forward_real_fft, const Common::InverseRealFFT *inverse_real_fft, double *y) {
+        FFT::fft_complex *x_spectrum = new FFT::fft_complex[fft_size];
 
         for (int i = 0; i < x_length; ++i)
             forward_real_fft->waveform[i] = x[i] / fft_size;

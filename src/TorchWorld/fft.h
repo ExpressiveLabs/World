@@ -11,13 +11,12 @@
 
 #include "TorchWorld/macrodefinitions.h"
 
-namespace tw {
-    TW_WORLD_BEGIN_C_DECLS
 // Commands for FFT (This is the same as FFTW)
 #define TW_FFT_FORWARD 1
 #define TW_FFT_BACKWARD 2
 #define TW_FFT_ESTIMATE 3
 
+namespace tw::FFT {
 // Complex number for FFT
     typedef double fft_complex[2];
 // Struct used for FFT
@@ -46,8 +45,6 @@ namespace tw {
     void fft_execute(fft_plan p);
 
     void fft_destroy_plan(fft_plan p);
-
-    TW_WORLD_END_C_DECLS
 }
 
-#endif  // WORLD_FFT_H_
+#endif  // TORCHWORLD_FFT_H_

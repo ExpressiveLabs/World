@@ -6,12 +6,10 @@
 #ifndef TORCHWORLD_MATLABFUNCTIONS_H_
 #define TORCHWORLD_MATLABFUNCTIONS_H_
 
-#include "TorchWorld/common.h"
-#include "TorchWorld/macrodefinitions.h"
+#include <TorchWorld/common.h>
+#include <TorchWorld/macrodefinitions.h>
 
-namespace tw {
-    TW_WORLD_BEGIN_C_DECLS
-
+namespace tw::MatlabFunctions {
 //-----------------------------------------------------------------------------
 // fftshift() swaps the left and right halves of input vector.
 // http://www.mathworks.com/help/matlab/ref/fftshift.html
@@ -156,8 +154,8 @@ namespace tw {
 //   y                : Calculated result.
 //-----------------------------------------------------------------------------
     void fast_fftfilt(const double *x, int x_length, const double *h, int h_length,
-                      int fft_size, const ForwardRealFFT *forward_real_fft,
-                      const InverseRealFFT *inverse_real_fft, double *y);
+                      int fft_size, const Common::ForwardRealFFT *forward_real_fft,
+                      const Common::InverseRealFFT *inverse_real_fft, double *y);
 
 //-----------------------------------------------------------------------------
 // matlab_std() calculates the standard deviation of the input vector.
@@ -170,8 +168,6 @@ namespace tw {
 //   Calculated standard deviation
 //-----------------------------------------------------------------------------
     double matlab_std(const double *x, int x_length);
-
-    TW_WORLD_END_C_DECLS
 }
 
-#endif  // WORLD_MATLABFUNCTIONS_H_
+#endif  // TORCHWORLD_MATLABFUNCTIONS_H_

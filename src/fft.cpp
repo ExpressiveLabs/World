@@ -19,7 +19,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-namespace tw {
+namespace tw::FFT {
 
     void cdft(int n, int isgn, double *a, int *ip, double *w);
 

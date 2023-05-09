@@ -57,9 +57,9 @@ namespace tw {
 
             Options& options;
 
-            MinimumPhaseAnalysis* minimum_phase = nullptr;
-            InverseRealFFT* inverse_real_fft = nullptr;
-            ForwardRealFFT* forward_real_fft = nullptr;
+            Common::MinimumPhaseAnalysis* minimum_phase = nullptr;
+            Common::InverseRealFFT* inverse_real_fft = nullptr;
+            Common::ForwardRealFFT* forward_real_fft = nullptr;
 
             double lowest_f0 = 0.0;
             double current_vuv = 0.0, current_time = 0.0, fractional_time_shift = 0.0;

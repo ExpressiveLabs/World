@@ -35,7 +35,7 @@ namespace tw {
     void CheapTrick::run() {
         int fft_size = options.fft_size;
 
-        randn_reseed();
+        MatlabFunctions::randn_reseed();
 
         double f0_floor = options.getF0Floor();
         spectral_envelope = std::vector<double>(fft_size);
@@ -100,7 +100,7 @@ namespace tw {
 // is corrected.
 //-----------------------------------------------------------------------------
     void CheapTrick::calculatePowerSpectrum() {
-        int half_window_length = matlab_round(1.5 * options.fs / current_f0);
+        int half_window_length = MatlabFunctions::matlab_round(1.5 * options.fs / current_f0);
 
         // FFT
         for (int i = half_window_length * 2 + 1; i < options.fft_size; ++i)
@@ -115,7 +115,7 @@ namespace tw {
                     forward_real_fft->spectrum[i][1] * forward_real_fft->spectrum[i][1];
 
         // DC correction
-        DCCorrection(power_spectrum, current_f0, options.fs, options.fft_size, power_spectrum);
+        Common::DCCorrection(power_spectrum, current_f0, options.fs, options.fft_size, power_spectrum);
     }
 
 //-----------------------------------------------------------------------------
@@ -126,9 +126,9 @@ namespace tw {
             base_index.at(i + half_window_length) = i;
         }
 
-        int origin = matlab_round(current_position * options.fs + 0.001);
+        int origin = MatlabFunctions::matlab_round(current_position * options.fs + 0.001);
         for (int i = 0; i <= half_window_length * 2; ++i)
-            safe_index.at(i) = MyMinInt(x_length - 1, MyMaxInt(0, origin + base_index.at(i)));
+            safe_index.at(i) = Common::MyMinInt(x_length - 1, Common::MyMaxInt(0, origin + base_index.at(i)));
 
         // Designing of the window function
         double average = 0.0;
@@ -148,7 +148,7 @@ namespace tw {
 // GetWindowedWaveform() windows the waveform by F0-adaptive window
 //-----------------------------------------------------------------------------
     void CheapTrick::applyWindowing() {
-        int half_window_length = matlab_round(1.5 * options.fs / current_f0);
+        int half_window_length = MatlabFunctions::matlab_round(1.5 * options.fs / current_f0);
 
         auto base_index = std::vector<int>(half_window_length * 2 + 1);
         auto safe_index = std::vector<int>(half_window_length * 2 + 1);
@@ -159,7 +159,7 @@ namespace tw {
         // F0-adaptive windowing
         double *waveform = forward_real_fft->waveform;
         for (int i = 0; i <= half_window_length * 2; ++i) {
-            waveform[i] = x->at(safe_index.at(i)) * window.at(i) + randn() * world::kMySafeGuardMinimum;
+            waveform[i] = x->at(safe_index.at(i)) * window.at(i) + MatlabFunctions::randn() * world::kMySafeGuardMinimum;
         }
 
         double tmp_weight1 = 0;
@@ -178,7 +178,7 @@ namespace tw {
     // Add noise to the spectrum.
     void CheapTrick::addNoise() {
         for (int i = 0; i <= options.fft_size / 2; ++i)
-            forward_real_fft->waveform[i] = forward_real_fft->waveform[i] + fabs(randn()) * world::kEps;
+            forward_real_fft->waveform[i] = forward_real_fft->waveform[i] + fabs(MatlabFunctions::randn()) * world::kEps;
     }
 
 
@@ -197,7 +197,7 @@ namespace tw {
         // Smoothing of the power (linear axis)
         // forward_real_fft.waveform is the power spectrum.
         // TODO: Bring this up to code with the rest of the updated library.
-        LinearSmoothing(forward_real_fft->waveform, current_f0 * 2.0 / 3.0,
+        Common::LinearSmoothing(forward_real_fft->waveform, current_f0 * 2.0 / 3.0,
                         options.fs, options.fft_size, forward_real_fft->waveform);
 
         // Add infinitesimal noise

@@ -16,12 +16,10 @@
 #include "TorchWorld/matlabfunctions.h"
 
 namespace tw {
-
-    static void GetNoiseSpectrum(int noise_size, int fft_size,
-                                 const ForwardRealFFT *forward_real_fft) {
+    static void GetNoiseSpectrum(int noise_size, int fft_size, const Common::ForwardRealFFT *forward_real_fft) {
         double average = 0.0;
         for (int i = 0; i < noise_size; ++i) {
-            forward_real_fft->waveform[i] = randn();
+            forward_real_fft->waveform[i] = MatlabFunctions::randn();
             average += forward_real_fft->waveform[i];
         }
 
@@ -38,9 +36,9 @@ namespace tw {
 //-----------------------------------------------------------------------------
     static void GetAperiodicResponse(int noise_size, int fft_size,
                                      const double *spectrum, const double *aperiodic_ratio, double current_vuv,
-                                     const ForwardRealFFT *forward_real_fft,
-                                     const InverseRealFFT *inverse_real_fft,
-                                     const MinimumPhaseAnalysis *minimum_phase, double *aperiodic_response) {
+                                     const Common::ForwardRealFFT *forward_real_fft,
+                                     const Common::InverseRealFFT *inverse_real_fft,
+                                     const Common::MinimumPhaseAnalysis *minimum_phase, double *aperiodic_response) {
         GetNoiseSpectrum(noise_size, fft_size, forward_real_fft);
 
         if (current_vuv != 0.0)
@@ -65,7 +63,7 @@ namespace tw {
                     forward_real_fft->spectrum[i][0];
         }
         fft_execute(inverse_real_fft->inverse_fft);
-        fftshift(inverse_real_fft->waveform, fft_size, aperiodic_response);
+        MatlabFunctions::fftshift(inverse_real_fft->waveform, fft_size, aperiodic_response);
     }
 
 //-----------------------------------------------------------------------------
@@ -86,8 +84,7 @@ namespace tw {
 // GetSpectrumWithFractionalTimeShift() calculates a periodic spectrum with
 // the fractional time shift under 1/fs.
 //-----------------------------------------------------------------------------
-    static void GetSpectrumWithFractionalTimeShift(int fft_size,
-                                                   double coefficient, const InverseRealFFT *inverse_real_fft) {
+    static void GetSpectrumWithFractionalTimeShift(int fft_size, double coefficient, const Common::InverseRealFFT *inverse_real_fft) {
         double re, im, re2, im2;
         for (int i = 0; i <= fft_size / 2; ++i) {
             re = inverse_real_fft->spectrum[i][0];
@@ -103,11 +100,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // GetPeriodicResponse() calculates a periodic response.
 //-----------------------------------------------------------------------------
-    static void GetPeriodicResponse(int fft_size, const double *spectrum,
-                                    const double *aperiodic_ratio, double current_vuv,
-                                    const InverseRealFFT *inverse_real_fft,
-                                    const MinimumPhaseAnalysis *minimum_phase, const double *dc_remover,
-                                    double fractional_time_shift, int fs, double *periodic_response) {
+    static void GetPeriodicResponse(int fft_size, const double *spectrum, const double *aperiodic_ratio, double current_vuv, const Common::InverseRealFFT *inverse_real_fft, const Common::MinimumPhaseAnalysis *minimum_phase, const double *dc_remover, double fractional_time_shift, int fs, double *periodic_response) {
         if (current_vuv <= 0.5 || aperiodic_ratio[0] > 0.999) {
             for (int i = 0; i < fft_size; ++i) periodic_response[i] = 0.0;
             return;
@@ -133,7 +126,7 @@ namespace tw {
         GetSpectrumWithFractionalTimeShift(fft_size, coefficient, inverse_real_fft);
 
         fft_execute(inverse_real_fft->inverse_fft);
-        fftshift(inverse_real_fft->waveform, fft_size, periodic_response);
+        MatlabFunctions::fftshift(inverse_real_fft->waveform, fft_size, periodic_response);
         RemoveDCComponent(periodic_response, fft_size, dc_remover,
                           periodic_response);
     }
@@ -141,9 +134,9 @@ namespace tw {
     static void GetSpectralEnvelope(double current_time, double frame_period,
                                     int f0_length, const torch::Tensor &spectrogram, int fft_size,
                                     double *spectral_envelope) {
-        int current_frame_floor = MyMinInt(f0_length - 1,
+        int current_frame_floor = Common::MyMinInt(f0_length - 1,
                                            static_cast<int>(floor(current_time / frame_period)));
-        int current_frame_ceil = MyMinInt(f0_length - 1,
+        int current_frame_ceil = Common::MyMinInt(f0_length - 1,
                                           static_cast<int>(ceil(current_time / frame_period)));
         double interpolation = current_time / frame_period - current_frame_floor;
 
@@ -160,23 +153,18 @@ namespace tw {
     static void GetAperiodicRatio(double current_time, double frame_period,
                                   int f0_length, const torch::Tensor &aperiodicity, int fft_size,
                                   double *aperiodic_spectrum) {
-        int current_frame_floor = MyMinInt(f0_length - 1,
-                                           static_cast<int>(floor(current_time / frame_period)));
-        int current_frame_ceil = MyMinInt(f0_length - 1,
+        int current_frame_floor = Common::MyMinInt(f0_length - 1, static_cast<int>(floor(current_time / frame_period)));
+        int current_frame_ceil = Common::MyMinInt(f0_length - 1,
                                           static_cast<int>(ceil(current_time / frame_period)));
         double interpolation = current_time / frame_period - current_frame_floor;
 
         if (current_frame_floor == current_frame_ceil)
             for (int i = 0; i <= fft_size / 2; ++i)
                 aperiodic_spectrum[i] =
-                        pow(GetSafeAperiodicity(aperiodicity[current_frame_floor][i].item<float>()), 2.0);
+                        pow(Common::GetSafeAperiodicity(aperiodicity[current_frame_floor][i].item<float>()), 2.0);
         else
             for (int i = 0; i <= fft_size / 2; ++i)
-                aperiodic_spectrum[i] = pow((1.0 - interpolation) *
-                                            GetSafeAperiodicity(aperiodicity[current_frame_floor][i].item<float>()) +
-                                            interpolation *
-                                            GetSafeAperiodicity(aperiodicity[current_frame_ceil][i].item<float>()),
-                                            2.0);
+                aperiodic_spectrum[i] = pow((1.0 - interpolation) * Common::GetSafeAperiodicity(aperiodicity[current_frame_floor][i].item<float>()) + interpolation * Common::GetSafeAperiodicity(aperiodicity[current_frame_ceil][i].item<float>()), 2.0);
     }
 
 //-----------------------------------------------------------------------------
@@ -278,9 +266,9 @@ namespace tw {
 
         getTemporalParameters();
 
-        interp1(coarse_time_axis.data(), coarse_f0.data(), options.f0_length + 1,
+        MatlabFunctions::interp1(coarse_time_axis.data(), coarse_f0.data(), options.f0_length + 1,
                 time_axis.data(), options.y_length, interpolated_f0.data());
-        interp1(coarse_time_axis.data(), coarse_vuv.data(), options.f0_length + 1,
+        MatlabFunctions::interp1(coarse_time_axis.data(), coarse_vuv.data(), options.f0_length + 1,
                 time_axis.data(), options.y_length, interpolated_vuv.data());
 
         for (int i = 0; i < options.y_length; ++i) {
@@ -317,7 +305,7 @@ namespace tw {
     }
 
     void Synthesis::run() {
-        randn_reseed();
+        MatlabFunctions::randn_reseed();
         initializeFFTs();
 
         lowest_f0 = options.fs / options.fft_size + 1.0;
@@ -338,13 +326,13 @@ namespace tw {
         int index, offset, lower_limit, upper_limit;
 
         for (int i: tqdm::range(number_of_pulses)) {
-            noise_size = pulse_locations_index[MyMinInt(number_of_pulses - 1, i + 1)] - pulse_locations_index[i];
+            noise_size = pulse_locations_index[Common::MyMinInt(number_of_pulses - 1, i + 1)] - pulse_locations_index[i];
 
             step();
 
             offset = pulse_locations_index[i] - options.fft_size / 2 + 1;
-            lower_limit = MyMaxInt(0, -offset);
-            upper_limit = MyMinInt(options.fft_size, options.y_length - offset);
+            lower_limit = Common::MyMaxInt(0, -offset);
+            upper_limit = Common::MyMinInt(options.fft_size, options.y_length - offset);
 
             for (int j = lower_limit; j < upper_limit; ++j) {
                 index = j + offset;

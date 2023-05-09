@@ -18,7 +18,7 @@ namespace tw {
 // Aperiodicity is initialized by the value 1.0 - TorchWorld::kMySafeGuardMinimum.
 // This value means the frame/frequency index is aperiodic.
 //-----------------------------------------------------------------------------
-    static void InitializeAperiodicity(int f0_length, int fft_size,
+    void Codec::InitializeAperiodicity(int f0_length, int fft_size,
                                        torch::Tensor &aperiodicity) {
         aperiodicity = torch::zeros({f0_length, fft_size});
 
@@ -32,7 +32,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // This function identifies whether this frame is voiced or unvoiced.
 //-----------------------------------------------------------------------------
-    static int CheckVUV(const torch::Tensor &coarse_aperiodicity,
+    int Codec::CheckVUV(const torch::Tensor &coarse_aperiodicity,
                         int number_of_aperiodicities, double *tmp_aperiodicity) {
         double tmp = 0.0;
         for (int i = 0; i < number_of_aperiodicities; ++i) {
@@ -47,10 +47,10 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // Aperiodicity is obtained from the coded aperiodicity.
 //-----------------------------------------------------------------------------
-    static void GetAperiodicity(const double *coarse_frequency_axis,
+    void Codec::GetAperiodicity(const double *coarse_frequency_axis,
                                 const double *coarse_aperiodicity, int number_of_aperiodicities,
                                 const double *frequency_axis, int fft_size, const torch::Tensor &aperiodicity) {
-        interp1(coarse_frequency_axis, coarse_aperiodicity,
+        MatlabFunctions::interp1(coarse_frequency_axis, coarse_aperiodicity,
                 number_of_aperiodicities + 2, frequency_axis, fft_size / 2 + 1,
                 aperiodicity.to(c10::kDouble).data_ptr<double>());
         for (int i = 0; i <= fft_size / 2; ++i)
@@ -74,9 +74,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // DCT for spectral envelope coding
 //-----------------------------------------------------------------------------
-    static void DCTForCodec(const double *mel_spectrum, int max_dimension,
-                            const fft_complex *weight, const ForwardRealFFT *forward_real_fft,
-                            int number_of_dimensions, double *mel_cepstrum) {
+    static void DCTForCodec(const double *mel_spectrum, int max_dimension, const FFT::fft_complex *weight, const Common::ForwardRealFFT *forward_real_fft, int number_of_dimensions, double *mel_cepstrum) {
         int bias = max_dimension / 2;
         for (int i = 0; i < max_dimension / 2; ++i) {
             forward_real_fft->waveform[i] = mel_spectrum[i * 2];
@@ -94,9 +92,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // IDCT for spectral envelope decoding
 //-----------------------------------------------------------------------------
-    static void IDCTForCodec(const double *mel_cepstrum, int max_dimension,
-                             const fft_complex *weight, const InverseComplexFFT *inverse_complex_fft,
-                             int number_of_dimensions, double *mel_spectrum) {
+    static void IDCTForCodec(const double *mel_cepstrum, int max_dimension, const FFT::fft_complex *weight, const Common::InverseComplexFFT *inverse_complex_fft, int number_of_dimensions, double *mel_spectrum) {
         double normalization = sqrt(inverse_complex_fft->fft_size);
         for (int i = 0; i < number_of_dimensions; ++i) {
             inverse_complex_fft->input[i][0] =
@@ -121,12 +117,9 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // Spectral envelope in a frame is coded
 //-----------------------------------------------------------------------------
-    static void CodeOneFrame(const double *log_spectral_envelope,
-                             const double *frequency_axis, int fft_size, const double *mel_axis,
-                             const fft_complex *weight, int max_dimension, int number_of_dimensions,
-                             const ForwardRealFFT *forward_real_fft, double *coded_spectral_envelope) {
+    static void CodeOneFrame(const double *log_spectral_envelope, const double *frequency_axis, int fft_size, const double *mel_axis, const FFT::fft_complex *weight, int max_dimension, int number_of_dimensions, const Common::ForwardRealFFT *forward_real_fft, double *coded_spectral_envelope) {
         double *mel_spectrum = new double[max_dimension];
-        interp1(frequency_axis, log_spectral_envelope, fft_size / 2 + 1,
+        MatlabFunctions::interp1(frequency_axis, log_spectral_envelope, fft_size / 2 + 1,
                 mel_axis, max_dimension, mel_spectrum);
 
         // DCT
@@ -141,8 +134,8 @@ namespace tw {
 //-----------------------------------------------------------------------------
     static void DecodeOneFrame(const double *coded_spectral_envelope,
                                const double *frequency_axis, int fft_size, const double *mel_axis,
-                               const fft_complex *weight, int max_dimension, int number_of_dimensions,
-                               const InverseComplexFFT *inverse_complex_fft, double *spectral_envelope) {
+                               const FFT::fft_complex *weight, int max_dimension, int number_of_dimensions,
+                               const Common::InverseComplexFFT *inverse_complex_fft, double *spectral_envelope) {
         double *mel_spectrum = new double[max_dimension + 2];
 
         // IDCT
@@ -151,7 +144,7 @@ namespace tw {
         mel_spectrum[0] = mel_spectrum[1];
         mel_spectrum[max_dimension + 1] = mel_spectrum[max_dimension];
 
-        interp1(mel_axis, mel_spectrum, max_dimension + 2, frequency_axis,
+        MatlabFunctions::interp1(mel_axis, mel_spectrum, max_dimension + 2, frequency_axis,
                 fft_size / 2 + 1, spectral_envelope);
 
         for (int i = 0; i < fft_size / 2 + 1; ++i)
@@ -165,7 +158,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
     static void GetParametersForCoding(double floor_frequency,
                                        double ceil_frequency, int fs, int fft_size, double *mel_axis,
-                                       double *frequency_axis, fft_complex *weight) {
+                                       double *frequency_axis, FFT::fft_complex *weight) {
         int max_dimension = fft_size / 2;
         double floor_mel = FrequencyToMel(floor_frequency);
         double ceil_mel = FrequencyToMel(ceil_frequency);
@@ -188,7 +181,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
     static void GetParametersForDecoding(double floor_frequency,
                                          double ceil_frequency, int fs, int fft_size, int number_of_dimensions,
-                                         double *mel_axis, double *frequency_axis, fft_complex *weight) {
+                                         double *mel_axis, double *frequency_axis, FFT::fft_complex *weight) {
         int max_dimension = fft_size / 2;
         double floor_mel = FrequencyToMel(floor_frequency);
         double ceil_mel = FrequencyToMel(ceil_frequency);
@@ -212,12 +205,12 @@ namespace tw {
     }
 
 
-    int GetNumberOfAperiodicities(int fs) {
-        return static_cast<int>(MyMinDouble(world::kUpperLimit, fs / 2.0 -
+    int Codec::GetNumberOfAperiodicities(int fs) {
+        return static_cast<int>(Common::MyMinDouble(world::kUpperLimit, fs / 2.0 -
                                                                 world::kFrequencyInterval) / world::kFrequencyInterval);
     }
 
-    void CodeAperiodicity(const double *const *aperiodicity, int f0_length,
+    void Codec::CodeAperiodicity(const double *const *aperiodicity, int f0_length,
                           int fs, int fft_size, double **coded_aperiodicity) {
         int number_of_aperiodicities = GetNumberOfAperiodicities(fs);
         double *coarse_frequency_axis = new double[number_of_aperiodicities];
@@ -229,7 +222,7 @@ namespace tw {
         for (int i = 0; i < f0_length; ++i) {
             for (int j = 0; j < fft_size / 2 + 1; ++j)
                 log_aperiodicity[j] = 20 * log10(aperiodicity[i][j]);
-            interp1Q(0, static_cast<double>(fs) / fft_size, log_aperiodicity,
+            MatlabFunctions::interp1Q(0, static_cast<double>(fs) / fft_size, log_aperiodicity,
                      fft_size / 2 + 1, coarse_frequency_axis, number_of_aperiodicities,
                      coded_aperiodicity[i]);
         }
@@ -238,7 +231,7 @@ namespace tw {
         delete[] log_aperiodicity;
     }
 
-    void DecodeAperiodicity(const torch::Tensor &coded_aperiodicity,
+    void Codec::DecodeAperiodicity(const torch::Tensor &coded_aperiodicity,
                             int f0_length, int fs, int fft_size, torch::Tensor &aperiodicity) {
         InitializeAperiodicity(f0_length, fft_size, aperiodicity);
         int number_of_aperiodicities = GetNumberOfAperiodicities(fs);
@@ -269,20 +262,20 @@ namespace tw {
         delete[] frequency_axis;
     }
 
-    void CodeSpectralEnvelope(const double *const *spectrogram, int f0_length,
+    void Codec::CodeSpectralEnvelope(const double *const *spectrogram, int f0_length,
                               int fs, int fft_size, int number_of_dimensions,
                               double **coded_spectral_envelope) {
         double *mel_axis = new double[fft_size / 2];
         double *frequency_axis = new double[fft_size / 2 + 1];
         double *tmp_spectrum = new double[fft_size / 2 + 1];
-        fft_complex *weight = new fft_complex[fft_size / 2];
+        FFT::fft_complex *weight = new FFT::fft_complex[fft_size / 2];
 
         // Generation of the required parameters
         GetParametersForCoding(world::kFloorFrequency,
-                               MyMinDouble(fs / 2.0, world::kCeilFrequency), fs, fft_size,
+                               Common::MyMinDouble(fs / 2.0, world::kCeilFrequency), fs, fft_size,
                                mel_axis, frequency_axis, weight);
 
-        ForwardRealFFT forward_real_fft = {0};
+        Common::ForwardRealFFT forward_real_fft = {0};
         InitializeForwardRealFFT(fft_size / 2, &forward_real_fft);
 
         for (int i = 0; i < f0_length; ++i) {
@@ -300,19 +293,19 @@ namespace tw {
         delete[] mel_axis;
     }
 
-    void DecodeSpectralEnvelope(const double *const *coded_spectral_envelope,
+    void Codec::DecodeSpectralEnvelope(const double *const *coded_spectral_envelope,
                                 int f0_length, int fs, int fft_size, int number_of_dimensions,
                                 double **spectrogram) {
         double *mel_axis = new double[fft_size / 2 + 2];
         double *frequency_axis = new double[fft_size / 2 + 1];
-        fft_complex *weight = new fft_complex[fft_size / 2];
+        FFT::fft_complex *weight = new FFT::fft_complex[fft_size / 2];
 
         // Generation of the required parameters
         GetParametersForDecoding(world::kFloorFrequency,
-                                 MyMinDouble(fs / 2.0, world::kCeilFrequency),
+                                 Common::MyMinDouble(fs / 2.0, world::kCeilFrequency),
                                  fs, fft_size, number_of_dimensions, mel_axis, frequency_axis, weight);
 
-        InverseComplexFFT inverse_complex_fft = {0};
+        Common::InverseComplexFFT inverse_complex_fft = {0};
         InitializeInverseComplexFFT(fft_size / 2, &inverse_complex_fft);
 
         for (int i = 0; i < f0_length; ++i) {

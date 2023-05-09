@@ -28,9 +28,9 @@ namespace tw {
             base_index[i + half_window_length] = i;
         }
 
-        int origin = matlab_round(current_position * options.fs + 0.001);
+        int origin = MatlabFunctions::matlab_round(current_position * options.fs + 0.001);
         for (int i = 0; i <= half_window_length * 2; ++i) {
-            safe_index[i] = MyMinInt(x_length - 1, MyMaxInt(0, origin + base_index[i]));
+            safe_index[i] = Common::MyMinInt(x_length - 1, Common::MyMaxInt(0, origin + base_index[i]));
         }
 
         // Designing of the window function
@@ -54,7 +54,7 @@ namespace tw {
 // In the variable window_type, 1: hanning, 2: blackman
 //-----------------------------------------------------------------------------
     void D4C::applyWindow(int window_type, double window_length_ratio) {
-        int half_window_length = matlab_round(window_length_ratio * options.fs / current_f0 / 2.0);
+        int half_window_length = MatlabFunctions::matlab_round(window_length_ratio * options.fs / current_f0 / 2.0);
 
         std::vector<int> base_index(half_window_length * 2 + 1);
         std::vector<int> safe_index(half_window_length * 2 + 1);
@@ -64,7 +64,7 @@ namespace tw {
 
         // F0-adaptive windowing
         for (int i = 0; i <= half_window_length * 2; ++i) {
-            forward_real_fft->waveform[i] = x->at(safe_index[i]) * window[i] + randn() * world::kMySafeGuardMinimum;
+            forward_real_fft->waveform[i] = x->at(safe_index[i]) * window[i] + MatlabFunctions::randn() * world::kMySafeGuardMinimum;
         }
 
         double tmp_weight1 = 0;
@@ -92,11 +92,11 @@ namespace tw {
         applyWindow(world::kBlackman, 4.0);
 
         double power = 0.0;
-        for (int i = 0; i <= matlab_round(2.0 * options.fs / current_f0) * 2; ++i) {
+        for (int i = 0; i <= MatlabFunctions::matlab_round(2.0 * options.fs / current_f0) * 2; ++i) {
             power += forward_real_fft->waveform[i] * forward_real_fft->waveform[i];
         }
 
-        for (int i = 0; i <= matlab_round(2.0 * options.fs / current_f0) * 2; ++i) {
+        for (int i = 0; i <= MatlabFunctions::matlab_round(2.0 * options.fs / current_f0) * 2; ++i) {
             forward_real_fft->waveform[i] /= sqrt(power);
         }
 
@@ -136,7 +136,7 @@ namespace tw {
             static_centroid[i] = centroid1[i] + centroid2[i];
 
         // TODO: C++-ify this
-        DCCorrection(static_centroid.data(), current_f0, options.fs, options.fft_size, static_centroid.data());
+        Common::DCCorrection(static_centroid.data(), current_f0, options.fs, options.fft_size, static_centroid.data());
     }
 
 //-----------------------------------------------------------------------------
@@ -156,9 +156,9 @@ namespace tw {
             smoothed_power_spectrum[i] = forward_real_fft->spectrum[i][0] * forward_real_fft->spectrum[i][0] + forward_real_fft->spectrum[i][1] * forward_real_fft->spectrum[i][1];
         }
 
-        DCCorrection(smoothed_power_spectrum.data(), current_f0, options.fs, options.fft_size,
+        Common::DCCorrection(smoothed_power_spectrum.data(), current_f0, options.fs, options.fft_size,
                      smoothed_power_spectrum.data());
-        LinearSmoothing(smoothed_power_spectrum.data(), current_f0, options.fs, options.fft_size,
+        Common::LinearSmoothing(smoothed_power_spectrum.data(), current_f0, options.fs, options.fft_size,
                         smoothed_power_spectrum.data());
     }
 
@@ -169,10 +169,10 @@ namespace tw {
     void D4C::staticGroupDelay() {
         for (int i = 0; i <= options.fft_size / 2; ++i)
             static_group_delay[i] = static_centroid[i] / smoothed_power_spectrum[i];
-        LinearSmoothing(static_group_delay.data(), current_f0 / 2.0, options.fs, options.fft_size, static_group_delay.data());
+        Common::LinearSmoothing(static_group_delay.data(), current_f0 / 2.0, options.fs, options.fft_size, static_group_delay.data());
 
         std::vector<double> smoothed_group_delay(options.fft_size / 2 + 1);
-        LinearSmoothing(static_group_delay.data(), current_f0, options.fs, options.fft_size, smoothed_group_delay.data());
+        Common::LinearSmoothing(static_group_delay.data(), current_f0, options.fs, options.fft_size, smoothed_group_delay.data());
 
         for (int i = 0; i <= options.fft_size / 2; ++i) {
             static_group_delay[i] -= smoothed_group_delay[i];
@@ -184,7 +184,7 @@ namespace tw {
 // The upper limit is given based on the sampling frequency.
 //-----------------------------------------------------------------------------
     void D4C::coarseAperiodicity() {
-        int boundary = matlab_round(options.fft_size * 8.0 / window_length);
+        int boundary = MatlabFunctions::matlab_round(options.fft_size * 8.0 / window_length);
         int half_window_length = window_length / 2;
 
         for (int i = 0; i < options.fft_size; ++i) forward_real_fft->waveform[i] = 0.0;
@@ -218,7 +218,7 @@ namespace tw {
     double D4C::LoveTrainSub(int boundary0, int boundary1, int boundary2) {
         std::vector<double> power_spectrum(options.fft_size, 0.0);
 
-        window_length = matlab_round(1.5 * options.fs / current_f0) * 2 + 1;
+        window_length = MatlabFunctions::matlab_round(1.5 * options.fs / current_f0) * 2 + 1;
 
         applyWindow(world::kBlackman, 3.0);
 
@@ -281,12 +281,12 @@ namespace tw {
 
         // Revision of the result based on the F0
         for (int i = 0; i < num_aperiodicities; ++i) {
-            coarse_aperiodicity[i + 1] = MyMinDouble(0.0, coarse_aperiodicity[i + 1] + (current_f0 - 100) / 50.0);
+            coarse_aperiodicity[i + 1] = Common::MyMinDouble(0.0, coarse_aperiodicity[i + 1] + (current_f0 - 100) / 50.0);
         }
     }
 
     void D4C::getAperiodicity(const torch::Tensor& ap) {
-        interp1(coarse_frequency_axis.data(), coarse_aperiodicity.data(), num_aperiodicities + 2, frequency_axis.data(), options.fft_size / 2 + 1, ap.to(c10::kDouble).data_ptr<double>());
+        MatlabFunctions::interp1(coarse_frequency_axis.data(), coarse_aperiodicity.data(), num_aperiodicities + 2, frequency_axis.data(), options.fft_size / 2 + 1, ap.to(c10::kDouble).data_ptr<double>());
 
         for (int i = 0; i <= options.fft_size / 2; ++i) {
             ap[i] = pow(10.0, ap[i] / 20.0);
@@ -307,18 +307,18 @@ namespace tw {
     }
 
     void D4C::run() {
-        randn_reseed();
+        MatlabFunctions::randn_reseed();
 
         initializeFFTs();
         initializeTensor();
 
         int fft_size_d4c = static_cast<int>(pow(2.0, 1.0 + static_cast<int>(log(4.0 * options.fs / world::kFloorF0D4C + 1) / world::kLog2)));
-        num_aperiodicities = static_cast<int>(MyMinDouble(world::kUpperLimit, options.fs / 2.0 - world::kFrequencyInterval) / world::kFrequencyInterval);
+        num_aperiodicities = static_cast<int>(Common::MyMinDouble(world::kUpperLimit, options.fs / 2.0 - world::kFrequencyInterval) / world::kFrequencyInterval);
 
         // Since the window function is common in D4CGeneralBody(), it is designed here to speed up.
         window_length = (int) (world::kFrequencyInterval * fft_size_d4c / options.fs) * 2 + 1;
         window = std::vector<double>(window_length);
-        NuttallWindow(window_length, window.data());
+        Common::NuttallWindow(window_length, window.data());
 
         // D4C Love Train (Aperiodicity of 0 Hz is given by the different algorithm)
         std::vector<double> aperiodicity0(f0_length);
@@ -342,7 +342,7 @@ namespace tw {
         for (int i = 0; i < f0_length; ++i) {
             if (*f0[i].data_ptr<double>() == 0 || aperiodicity0[i] <= options.threshold) continue;
 
-            current_f0 = MyMaxDouble(world::kFloorF0D4C, *f0[i].data_ptr<double>());
+            current_f0 = Common::MyMaxDouble(world::kFloorF0D4C, *f0[i].data_ptr<double>());
             current_position = temporal_positions->at(i);
 
             // NOTE: if this doesn't work, check what coarse_aperiodicity[1] actually does

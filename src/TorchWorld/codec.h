@@ -10,67 +10,21 @@
 #include "TorchWorld/macrodefinitions.h"
 
 namespace tw {
-    TW_WORLD_BEGIN_C_DECLS
+    class Codec {
+        public:
+            static void InitializeAperiodicity(int f0_length, int fft_size, torch::Tensor &aperiodicity);
+            static int GetNumberOfAperiodicities(int fs);
+            static void CodeAperiodicity(const double *const *aperiodicity, int f0_length, int fs, int fft_size, double **coded_aperiodicity);
+            static void DecodeAperiodicity(const torch::Tensor &coded_aperiodicity, int f0_length, int fs, int fft_size, torch::Tensor &aperiodicity);
+            static void GetAperiodicity(const double *coarse_frequency_axis, const double *coarse_aperiodicity, int number_of_aperiodicities, const double *frequency_axis, int fft_size, const torch::Tensor &aperiodicity);
 
-//-----------------------------------------------------------------------------
-// GetNumberOfAperiodicities provides the number of dimensions for aperiodicity
-// coding. It is determined by only fs.
-//
-// Input:
-//   fs       : Sampling frequency
-//
-// Output:
-//   Number of aperiodicities
-//-----------------------------------------------------------------------------
-    int GetNumberOfAperiodicities(int fs);
+            static void CodeSpectralEnvelope(const double *const *spectrogram, int f0_length, int fs, int fft_size, int number_of_dimensions, double **coded_spectral_envelope);
+            static void DecodeSpectralEnvelope(const double *const *coded_spectral_envelope, int f0_length, int fs, int fft_size, int number_of_dimensions, double **spectrogram);
 
-//-----------------------------------------------------------------------------
-// CodeAperiodicity codes the aperiodicity. The number of dimensions is
-// determined by fs.
-//
-// Input:
-//   aperiodicity       : Aperiodicity before coding
-//   f0_length          : Length of F0 contour
-//   fs                 : Sampling frequency
-//   fft_size           : FFT size
-//
-// Output:
-//   coded_aperiodicity : Coded aperiodicity
-//-----------------------------------------------------------------------------
-    void CodeAperiodicity(const double *const *aperiodicity, int f0_length,
-                          int fs, int fft_size, double **coded_aperiodicity);
+            static int CheckVUV(const torch::Tensor &coarse_aperiodicity, int number_of_aperiodicities, double *tmp_aperiodicity);
+    };
 
-//-----------------------------------------------------------------------------
-// DecodeAperiodicity decodes the coded aperiodicity.
-//
-// Input:
-//   coded_aperiodicity : Coded aperiodicity
-//   f0_length          : Length of F0 contour
-//   fs                 : Sampling frequency
-//   fft_size           : FFT size
-//
-// Output:
-//   aperiodicity       : Decoded aperiodicity
-//-----------------------------------------------------------------------------
-    void DecodeAperiodicity(const torch::Tensor &coded_aperiodicity,
-                            int f0_length, int fs, int fft_size, torch::Tensor &aperiodicity);
 
-//-----------------------------------------------------------------------------
-// CodeSpectralEnvelope codes the spectral envelope.
-//
-// Input:
-//   aperiodicity         : Aperiodicity before coding
-//   f0_length            : Length of F0 contour
-//   fs                   : Sampling frequency
-//   fft_size             : FFT size
-//   number_of_dimensions : Parameter for compression
-//
-// Output:
-//   coded_spectral_envelope
-//-----------------------------------------------------------------------------
-    void CodeSpectralEnvelope(const double *const *spectrogram, int f0_length,
-                              int fs, int fft_size, int number_of_dimensions,
-                              double **coded_spectral_envelope);
 
 //-----------------------------------------------------------------------------
 // DecodeSpectralEnvelope decodes the coded spectral envelope.
@@ -85,12 +39,7 @@ namespace tw {
 // Output:
 //   spectrogram
 //-----------------------------------------------------------------------------
-    void DecodeSpectralEnvelope(const double *const *coded_spectral_envelope,
-                                int f0_length, int fs, int fft_size, int number_of_dimensions,
-                                double **spectrogram);
 
-
-    TW_WORLD_END_C_DECLS
 }
 
 #endif  // WORLD_CODEC_H_

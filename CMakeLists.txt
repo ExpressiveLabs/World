@@ -16,7 +16,7 @@ option(WORLD_BUILD_TESTS "Set to ON to build tests" OFF)
 option(WORLD_BUILD_EXAMPLES "Set to ON to build examples" ON)
 
 # Adding Torch to the project
-set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libtorch")
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../libtorch-cpu")
 find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 

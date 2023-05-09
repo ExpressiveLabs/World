@@ -12,45 +12,44 @@
 #include "TorchWorld/fft.h"
 #include "TorchWorld/macrodefinitions.h"
 
-namespace tw {
-    TW_WORLD_BEGIN_C_DECLS
+namespace tw::Common {
 
 //-----------------------------------------------------------------------------
 // Structs on FFT
 //-----------------------------------------------------------------------------
 // Forward FFT in the real sequence
-    typedef struct {
+    struct ForwardRealFFT {
         int fft_size;
         double *waveform;
-        fft_complex *spectrum;
-        fft_plan forward_fft;
-    } ForwardRealFFT;
+        FFT::fft_complex *spectrum;
+        FFT::fft_plan forward_fft;
+    } ;
 
 // Inverse FFT in the real sequence
-    typedef struct {
+    struct InverseRealFFT {
         int fft_size;
         double *waveform;
-        fft_complex *spectrum;
-        fft_plan inverse_fft;
-    } InverseRealFFT;
+        FFT::fft_complex *spectrum;
+        FFT::fft_plan inverse_fft;
+    } ;
 
 // Inverse FFT in the complex sequence
-    typedef struct {
+    struct InverseComplexFFT {
         int fft_size;
-        fft_complex *input;
-        fft_complex *output;
-        fft_plan inverse_fft;
-    } InverseComplexFFT;
+        FFT::fft_complex *input;
+        FFT::fft_complex *output;
+        FFT::fft_plan inverse_fft;
+    };
 
 // Minimum phase analysis from logarithmic power spectrum
-    typedef struct {
+    struct MinimumPhaseAnalysis {
         int fft_size;
         double *log_spectrum;
-        fft_complex *minimum_phase_spectrum;
-        fft_complex *cepstrum;
-        fft_plan inverse_fft;
-        fft_plan forward_fft;
-    } MinimumPhaseAnalysis;
+        FFT::fft_complex *minimum_phase_spectrum;
+        FFT::fft_complex *cepstrum;
+        FFT::fft_plan inverse_fft;
+        FFT::fft_plan forward_fft;
+    };
 
 //-----------------------------------------------------------------------------
 // GetSuitableFFTSize() calculates the suitable FFT size.
@@ -142,8 +141,6 @@ namespace tw {
 
     void DestroyMinimumPhaseAnalysis(MinimumPhaseAnalysis *minimum_phase);
 
-
-    TW_WORLD_END_C_DECLS
 }
 
 #endif  // WORLD_COMMON_H_

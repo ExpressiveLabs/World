@@ -66,8 +66,8 @@ namespace tw {
             const torch::Tensor &f0;
             const torch::Tensor &spectrogram;
 
-            ForwardRealFFT* forward_real_fft = nullptr;
-            InverseRealFFT* inverse_real_fft = nullptr;
+            Common::ForwardRealFFT* forward_real_fft = nullptr;
+            Common::InverseRealFFT* inverse_real_fft = nullptr;
 
             const Options& options;
     };

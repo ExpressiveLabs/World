@@ -21,18 +21,15 @@ namespace tw {
 // Since the result includes negative value and the value that exceeds the
 // length of the input signal, it must be modified appropriately.
 //-----------------------------------------------------------------------------
-    static void GetBaseIndex(double current_position, const double *base_time,
-                             int base_time_length, int fs, int *index_raw) {
+    void StoneMask::GetBaseIndex(double current_position, const double *base_time, int base_time_length, int fs, int *index_raw) {
         for (int i = 0; i < base_time_length; ++i)
-            index_raw[i] = matlab_round((current_position + base_time[i]) * fs);
+            index_raw[i] = MatlabFunctions::matlab_round((current_position + base_time[i]) * fs);
     }
 
 //-----------------------------------------------------------------------------
 // GetMainWindow() generates the window function.
 //-----------------------------------------------------------------------------
-    static void GetMainWindow(double current_position, const int *index_raw,
-                              int base_time_length, int fs, double window_length_in_time,
-                              double *main_window) {
+    void StoneMask::GetMainWindow(double current_position, const int *index_raw, int base_time_length, int fs, double window_length_in_time, double *main_window) {
         double tmp = 0.0;
         for (int i = 0; i < base_time_length; ++i) {
             tmp = (index_raw[i] - 1.0) / fs - current_position;
@@ -46,8 +43,7 @@ namespace tw {
 // GetDiffWindow() generates the differentiated window.
 // Diff means differential.
 //-----------------------------------------------------------------------------
-    static void GetDiffWindow(const double *main_window, int base_time_length,
-                              double *diff_window) {
+    void StoneMask::GetDiffWindow(const double *main_window, int base_time_length, double *diff_window) {
         diff_window[0] = -main_window[1] / 2.0;
         for (int i = 1; i < base_time_length - 1; ++i)
             diff_window[i] = -(main_window[i + 1] - main_window[i - 1]) / 2.0;
@@ -58,14 +54,11 @@ namespace tw {
 // GetSpectra() calculates two spectra of the waveform windowed by windows
 // (main window and diff window).
 //-----------------------------------------------------------------------------
-    static void GetSpectra(const double *x, int x_length, int fft_size,
-                           const int *index_raw, const double *main_window, const double *diff_window,
-                           int base_time_length, const ForwardRealFFT *forward_real_fft,
-                           fft_complex *main_spectrum, fft_complex *diff_spectrum) {
+    void StoneMask::GetSpectra(const double *x, int x_length, int fft_size, const int *index_raw, const double *main_window, const double *diff_window, int base_time_length, const Common::ForwardRealFFT *forward_real_fft, FFT::fft_complex *main_spectrum, FFT::fft_complex *diff_spectrum) {
         int *index = new int[base_time_length];
 
         for (int i = 0; i < base_time_length; ++i)
-            index[i] = MyMaxInt(0, MyMinInt(x_length - 1, index_raw[i] - 1));
+            index[i] = Common::MyMaxInt(0, Common::MyMinInt(x_length - 1, index_raw[i] - 1));
         for (int i = 0; i < base_time_length; ++i)
             forward_real_fft->waveform[i] = x[index[i]] * main_window[i];
         for (int i = base_time_length; i < fft_size; ++i)
@@ -93,14 +86,12 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // FixF0() fixed the F0 by instantaneous frequency.
 //-----------------------------------------------------------------------------
-    static double FixF0(const double *power_spectrum, const double *numerator_i,
-                        int fft_size, int fs, double initial_f0, int number_of_harmonics) {
-        double *amplitude_list = new double[number_of_harmonics];
-        double *instantaneous_frequency_list = new double[number_of_harmonics];
+    double StoneMask::FixF0(const double *power_spectrum, const double *numerator_i, int fft_size, int fs, double initial_f0, int number_of_harmonics) {
+        auto *amplitude_list = new double[number_of_harmonics];
+        auto *instantaneous_frequency_list = new double[number_of_harmonics];
         int index;
         for (int i = 0; i < number_of_harmonics; ++i) {
-            index = MyMinInt(matlab_round(initial_f0 * fft_size / fs * (i + 1)),
-                             fft_size / 2);
+            index = Common::MyMinInt(MatlabFunctions::matlab_round(initial_f0 * fft_size / fs * (i + 1)), fft_size / 2);
             instantaneous_frequency_list[i] = power_spectrum[index] == 0.0 ? 0.0 :
                                               static_cast<double>(index) * fs / fft_size +
                                               numerator_i[index] / power_spectrum[index] * fs / 2.0 / world::kPi;
@@ -120,8 +111,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // GetTentativeF0() calculates the F0 based on the instantaneous frequency.
 //-----------------------------------------------------------------------------
-    static double GetTentativeF0(const double *power_spectrum,
-                                 const double *numerator_i, int fft_size, int fs, double initial_f0) {
+    double StoneMask::GetTentativeF0(const double *power_spectrum, const double *numerator_i, int fft_size, int fs, double initial_f0) {
         double tentative_f0 =
                 FixF0(power_spectrum, numerator_i, fft_size, fs, initial_f0, 2);
 
@@ -134,14 +124,11 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // GetMeanF0() calculates the instantaneous frequency.
 //-----------------------------------------------------------------------------
-    static double GetMeanF0(const double *x, int x_length, int fs,
-                            double current_position, double initial_f0, int fft_size,
-                            double window_length_in_time, const double *base_time,
-                            int base_time_length) {
-        ForwardRealFFT forward_real_fft = {0};
+    double StoneMask::GetMeanF0(const double *x, int x_length, int fs, double current_position, double initial_f0, int fft_size, double window_length_in_time, const double *base_time, int base_time_length) {
+        Common::ForwardRealFFT forward_real_fft = {0};
         InitializeForwardRealFFT(fft_size, &forward_real_fft);
-        fft_complex *main_spectrum = new fft_complex[fft_size];
-        fft_complex *diff_spectrum = new fft_complex[fft_size];
+        auto *main_spectrum = new FFT::fft_complex[fft_size];
+        auto *diff_spectrum = new FFT::fft_complex[fft_size];
 
         int *index_raw = new int[base_time_length];
         double *main_window = new double[base_time_length];
@@ -182,8 +169,7 @@ namespace tw {
 // GetRefinedF0() fixes the F0 estimated by Dio(). This function uses
 // instantaneous frequency.
 //-----------------------------------------------------------------------------
-    static double GetRefinedF0(const double *x, int x_length, int fs,
-                               double current_potision, double initial_f0) {
+    double StoneMask::GetRefinedF0(const double *x, int x_length, int fs, double current_potision, double initial_f0) {
         if (initial_f0 <= world::kFloorF0StoneMask || initial_f0 > fs / 12.0)
             return 0.0;
 
@@ -207,12 +193,10 @@ namespace tw {
         return mean_f0;
     }
 
-    void StoneMask(const double *x, int x_length, int fs,
-                   const double *temporal_positions, const double *f0, int f0_length,
-                   double *refined_f0) {
-        for (int i = 0; i < f0_length; i++)
-            refined_f0[i] =
-                    GetRefinedF0(x, x_length, fs, temporal_positions[i], f0[i]);
+    StoneMask::StoneMask(const double *x, int x_length, int fs, const double *temporal_positions, const double *f0, int f0_length, double *refined_f0) {
+        for (int i = 0; i < f0_length; i++) {
+            refined_f0[i] = GetRefinedF0(x, x_length, fs, temporal_positions[i], f0[i]);
+        }
     }
 
 }  // namespace

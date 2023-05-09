@@ -58,7 +58,7 @@ namespace tw {
         for (int i = lag + x_length; i < new_x_length; ++i)
             new_x[i] = x[x_length - 1];
 
-        decimate(new_x, new_x_length, decimation_ratio, new_y);
+        MatlabFunctions::decimate(new_x, new_x_length, decimation_ratio, new_y);
         for (int i = 0; i < y_length; ++i) y[i] = new_y[lag / decimation_ratio + i];
 
         delete[] new_x;
@@ -68,9 +68,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // GetWaveformAndSpectrum() calculates the downsampled signal and its spectrum
 //-----------------------------------------------------------------------------
-    static void GetWaveformAndSpectrum(const double *x, int x_length,
-                                       int y_length, double actual_fs, int fft_size, int decimation_ratio,
-                                       double *y, fft_complex *y_spectrum) {
+    static void GetWaveformAndSpectrum(const double *x, int x_length, int y_length, double actual_fs, int fft_size, int decimation_ratio, double *y, FFT::fft_complex *y_spectrum) {
         // Initialization
         for (int i = 0; i < fft_size; ++i) y[i] = 0.0;
 
@@ -85,7 +83,7 @@ namespace tw {
         for (int i = 0; i < y_length; ++i) y[i] -= mean_y;
         for (int i = y_length; i < fft_size; ++i) y[i] = 0.0;
 
-        fft_plan forwardFFT = fft_plan_dft_r2c_1d(fft_size, y, y_spectrum, TW_FFT_ESTIMATE);
+        FFT::fft_plan forwardFFT = FFT::fft_plan_dft_r2c_1d(fft_size, y, y_spectrum, TW_FFT_ESTIMATE);
         fft_execute(forwardFFT);
 
         fft_destroy_plan(forwardFFT);
@@ -96,18 +94,18 @@ namespace tw {
 // input signal and band-pass filter.
 //-----------------------------------------------------------------------------
     static void GetFilteredSignal(double boundary_f0, int fft_size, double fs,
-                                  const fft_complex *y_spectrum, int y_length, double *filtered_signal) {
-        int filter_length_half = matlab_round(fs / boundary_f0 * 2.0);
+                                  const FFT::fft_complex *y_spectrum, int y_length, double *filtered_signal) {
+        int filter_length_half = MatlabFunctions::matlab_round(fs / boundary_f0 * 2.0);
         double *band_pass_filter = new double[fft_size];
-        NuttallWindow(filter_length_half * 2 + 1, band_pass_filter);
+        Common::NuttallWindow(filter_length_half * 2 + 1, band_pass_filter);
         for (int i = -filter_length_half; i <= filter_length_half; ++i)
             band_pass_filter[i + filter_length_half] *=
                     cos(2 * world::kPi * boundary_f0 * i / fs);
         for (int i = filter_length_half * 2 + 1; i < fft_size; ++i)
             band_pass_filter[i] = 0.0;
 
-        fft_complex *band_pass_filter_spectrum = new fft_complex[fft_size];
-        fft_plan forwardFFT = fft_plan_dft_r2c_1d(fft_size, band_pass_filter,band_pass_filter_spectrum, TW_FFT_ESTIMATE);
+        auto *band_pass_filter_spectrum = new FFT::fft_complex[fft_size];
+        FFT::fft_plan forwardFFT = FFT::fft_plan_dft_r2c_1d(fft_size, band_pass_filter,band_pass_filter_spectrum, TW_FFT_ESTIMATE);
         fft_execute(forwardFFT);
 
         // Convolution
@@ -130,7 +128,7 @@ namespace tw {
                     band_pass_filter_spectrum[i][1];
         }
 
-        fft_plan inverseFFT = fft_plan_dft_c2r_1d(fft_size, band_pass_filter_spectrum, filtered_signal,TW_FFT_ESTIMATE);
+        FFT::fft_plan inverseFFT = FFT::fft_plan_dft_c2r_1d(fft_size, band_pass_filter_spectrum, filtered_signal,TW_FFT_ESTIMATE);
         fft_execute(inverseFFT);
 
         // Compensation of the delay.
@@ -274,18 +272,18 @@ namespace tw {
         for (int i = 0; i < 4; ++i)
             interpolated_f0_set[i] = new double[f0_length];
 
-        interp1(zero_crossings->negative_interval_locations,
+        MatlabFunctions::interp1(zero_crossings->negative_interval_locations,
                 zero_crossings->negative_intervals,
                 zero_crossings->number_of_negatives,
                 temporal_positions, f0_length, interpolated_f0_set[0]);
-        interp1(zero_crossings->positive_interval_locations,
+        MatlabFunctions::interp1(zero_crossings->positive_interval_locations,
                 zero_crossings->positive_intervals,
                 zero_crossings->number_of_positives,
                 temporal_positions, f0_length, interpolated_f0_set[1]);
-        interp1(zero_crossings->peak_interval_locations,
+        MatlabFunctions::interp1(zero_crossings->peak_interval_locations,
                 zero_crossings->peak_intervals, zero_crossings->number_of_peaks,
                 temporal_positions, f0_length, interpolated_f0_set[2]);
-        interp1(zero_crossings->dip_interval_locations,
+        MatlabFunctions::interp1(zero_crossings->dip_interval_locations,
                 zero_crossings->dip_intervals, zero_crossings->number_of_dips,
                 temporal_positions, f0_length, interpolated_f0_set[3]);
 
@@ -312,7 +310,7 @@ namespace tw {
 // GetF0CandidateFromRawEvent() f0 candidate contour in 1-ch signal
 //-----------------------------------------------------------------------------
     static void GetF0CandidateFromRawEvent(double boundary_f0, double fs,
-                                           const fft_complex *y_spectrum, int y_length, int fft_size, double f0_floor,
+                                           const FFT::fft_complex *y_spectrum, int y_length, int fft_size, double f0_floor,
                                            double f0_ceil, const double *temporal_positions, int f0_length,
                                            double *f0_candidate) {
         double *filtered_signal = new double[fft_size];
@@ -336,7 +334,7 @@ namespace tw {
     static void GetRawF0Candidates(const double *boundary_f0_list,
                                    int number_of_bands, double actual_fs, int y_length,
                                    const double *temporal_positions, int f0_length,
-                                   const fft_complex *y_spectrum, int fft_size, double f0_floor,
+                                   const FFT::fft_complex *y_spectrum, int fft_size, double f0_floor,
                                    double f0_ceil, double **raw_f0_candidates) {
         for (int i = 0; i < number_of_bands; ++i)
             GetF0CandidateFromRawEvent(boundary_f0_list[i], actual_fs, y_spectrum,
@@ -402,7 +400,7 @@ namespace tw {
             vuv[0] = vuv[number_of_channels - 1] = 0;
             number_of_voiced_sections = DetectOfficialF0CandidatesSub1(vuv,
                                                                        number_of_channels, st, ed);
-            number_of_candidates = MyMaxInt(number_of_candidates,
+            number_of_candidates = Common::MyMaxInt(number_of_candidates,
                                             DetectOfficialF0CandidatesSub2(vuv, raw_f0_candidates, i,
                                                                            number_of_voiced_sections, st, ed,
                                                                            max_candidates, f0_candidates[i]));
@@ -438,7 +436,7 @@ namespace tw {
                              int base_time_length, double fs, int *base_index) {
         // First-aid treatment
         int basic_index =
-                matlab_round((current_position + base_time[0]) * fs + 0.001);
+                MatlabFunctions::matlab_round((current_position + base_time[0]) * fs + 0.001);
 
         for (int i = 0; i < base_time_length; ++i) base_index[i] = basic_index + i;
     }
@@ -474,15 +472,11 @@ namespace tw {
 // GetSpectra() calculates two spectra of the waveform windowed by windows
 // (main window and diff window).
 //-----------------------------------------------------------------------------
-    static void GetSpectra(const double *x, int x_length, int fft_size,
-                           const int *base_index, const double *main_window,
-                           const double *diff_window, int base_time_length,
-                           const ForwardRealFFT *forward_real_fft, fft_complex *main_spectrum,
-                           fft_complex *diff_spectrum) {
+    static void GetSpectra(const double *x, int x_length, int fft_size, const int *base_index, const double *main_window, const double *diff_window, int base_time_length, const Common::ForwardRealFFT *forward_real_fft, FFT::fft_complex *main_spectrum, FFT::fft_complex *diff_spectrum) {
         int *safe_index = new int[base_time_length];
 
         for (int i = 0; i < base_time_length; ++i)
-            safe_index[i] = MyMaxInt(0, MyMinInt(x_length - 1, base_index[i] - 1));
+            safe_index[i] = Common::MyMaxInt(0, Common::MyMinInt(x_length - 1, base_index[i] - 1));
         for (int i = 0; i < base_time_length; ++i)
             forward_real_fft->waveform[i] = x[safe_index[i]] * main_window[i];
         for (int i = base_time_length; i < fft_size; ++i)
@@ -515,10 +509,9 @@ namespace tw {
 
         int index;
         for (int i = 0; i < number_of_harmonics; ++i) {
-            index = matlab_round(current_f0 * fft_size / fs * (i + 1));
-            instantaneous_frequency_list[i] = power_spectrum[index] == 0.0 ? 0.0 :
-                                              static_cast<double>(index) * fs / fft_size +
-                                              numerator_i[index] / power_spectrum[index] * fs / 2.0 / world::kPi;
+            index = MatlabFunctions::matlab_round(current_f0 * fft_size / fs * (i + 1));
+            instantaneous_frequency_list[i] = power_spectrum[index] == 0.0 ? 0.0 : static_cast<double>(index) * fs / fft_size + numerator_i[index] / power_spectrum[index] * fs / 2.0 / world::kPi;
+
             amplitude_list[i] = sqrt(power_spectrum[index]);
         }
         double denominator = 0.0;
@@ -545,10 +538,10 @@ namespace tw {
                           double current_position, double current_f0, int fft_size,
                           double window_length_in_time, const double *base_time,
                           int base_time_length, double *refined_f0, double *refined_score) {
-        ForwardRealFFT forward_real_fft = {0};
+        Common::ForwardRealFFT forward_real_fft = {0};
         InitializeForwardRealFFT(fft_size, &forward_real_fft);
-        fft_complex *main_spectrum = new fft_complex[fft_size];
-        fft_complex *diff_spectrum = new fft_complex[fft_size];
+        auto *main_spectrum = new FFT::fft_complex[fft_size];
+        auto *diff_spectrum = new FFT::fft_complex[fft_size];
 
         int *base_index = new int[base_time_length];
         double *main_window = new double[base_time_length];
@@ -571,10 +564,8 @@ namespace tw {
                                 main_spectrum[j][1] * main_spectrum[j][1];
         }
 
-        int number_of_harmonics =
-                MyMinInt(static_cast<int>(fs / 2.0 / current_f0), 6);
-        FixF0(power_spectrum, numerator_i, fft_size, fs, current_f0,
-              number_of_harmonics, refined_f0, refined_score);
+        int number_of_harmonics = Common::MyMinInt(static_cast<int>(fs / 2.0 / current_f0), 6);
+        FixF0(power_spectrum, numerator_i, fft_size, fs, current_f0, number_of_harmonics, refined_f0, refined_score);
 
         delete[] diff_spectrum;
         delete[] diff_window;
@@ -663,7 +654,7 @@ namespace tw {
                      number_of_candidates, 1.0, &error1);
         SelectBestF0(reference_f0, tmp_f0_candidates[i - 1],
                      number_of_candidates, 1.0, &error2);
-        min_error = MyMinDouble(error1, error2);
+        min_error = Common::MyMinDouble(error1, error2);
         if (min_error <= threshold) return;
         f0_candidates[i][j] = 0;
         f0_scores[i][j] = 0;
@@ -867,16 +858,8 @@ namespace tw {
                       double allowed_range, double **extended_f0, int *shifted_boundary_list) {
         int threshold = 100;
         for (int i = 0; i < number_of_sections; ++i) {
-            shifted_boundary_list[i * 2 + 1] = ExtendF0(multi_channel_f0[i],
-                                                        f0_length, boundary_list[i * 2 + 1],
-                                                        MyMinInt(f0_length - 2, boundary_list[i * 2 + 1] + threshold),
-                                                        1,
-                                                        f0_candidates, number_of_candidates, allowed_range,
-                                                        extended_f0[i]);
-            shifted_boundary_list[i * 2] = ExtendF0(multi_channel_f0[i], f0_length,
-                                                    boundary_list[i * 2], MyMaxInt(1, boundary_list[i * 2] - threshold),
-                                                    -1,
-                                                    f0_candidates, number_of_candidates, allowed_range, extended_f0[i]);
+            shifted_boundary_list[i * 2 + 1] = ExtendF0(multi_channel_f0[i], f0_length, boundary_list[i * 2 + 1], Common::MyMinInt(f0_length - 2, boundary_list[i * 2 + 1] + threshold), 1, f0_candidates, number_of_candidates, allowed_range, extended_f0[i]);
+            shifted_boundary_list[i * 2] = ExtendF0(multi_channel_f0[i], f0_length, boundary_list[i * 2], Common::MyMaxInt(1, boundary_list[i * 2] - threshold), -1, f0_candidates, number_of_candidates, allowed_range, extended_f0[i]);
         }
 
         return ExtendSub(multi_channel_f0, shifted_boundary_list,
@@ -1121,11 +1104,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // HarvestGeneralBodySub() is the subfunction of HarvestGeneralBody()
 //-----------------------------------------------------------------------------
-    static int HarvestGeneralBodySub(const double *boundary_f0_list,
-                                     int number_of_channels, int f0_length, double actual_fs, int y_length,
-                                     const double *temporal_positions, const fft_complex *y_spectrum,
-                                     int fft_size, double f0_floor, double f0_ceil, int max_candidates,
-                                     double **f0_candidates) {
+    static int HarvestGeneralBodySub(const double *boundary_f0_list, int number_of_channels, int f0_length, double actual_fs, int y_length, const double *temporal_positions, const FFT::fft_complex *y_spectrum, int fft_size, double f0_floor, double f0_ceil, int max_candidates, double **f0_candidates) {
         double **raw_f0_candidates = new double *[number_of_channels];
         for (int i = 0; i < number_of_channels; ++i)
             raw_f0_candidates[i] = new double[f0_length];
@@ -1134,9 +1113,7 @@ namespace tw {
                            actual_fs, y_length, temporal_positions, f0_length, y_spectrum,
                            fft_size, f0_floor, f0_ceil, raw_f0_candidates);
 
-        int number_of_candidates = DetectOfficialF0Candidates(raw_f0_candidates,
-                                                              number_of_channels, f0_length, max_candidates,
-                                                              f0_candidates);
+        int number_of_candidates = DetectOfficialF0Candidates(raw_f0_candidates, number_of_channels, f0_length, max_candidates, f0_candidates);
 
         OverlapF0Candidates(f0_length, number_of_candidates, f0_candidates);
 
@@ -1149,10 +1126,7 @@ namespace tw {
 //-----------------------------------------------------------------------------
 // HarvestGeneralBody() estimates the F0 contour based on Harvest.
 //-----------------------------------------------------------------------------
-    static void HarvestGeneralBody(const double *x, int x_length, int fs,
-                                   int frame_period, double f0_floor, double f0_ceil,
-                                   double channels_in_octave, int speed, double *temporal_positions,
-                                   double *f0) {
+    void Harvest::GeneralBody(const double *x, int x_length, int fs, int frame_period, double f0_floor, double f0_ceil, double channels_in_octave, int speed, double *temporal_positions, double *f0) {
         double adjusted_f0_floor = f0_floor * 0.9;
         double adjusted_f0_ceil = f0_ceil * 1.1;
         int number_of_channels =
@@ -1164,16 +1138,16 @@ namespace tw {
                     adjusted_f0_floor * pow(2.0, (i + 1) / channels_in_octave);
 
         // normalization
-        int decimation_ratio = MyMaxInt(MyMinInt(speed, 12), 1);
+        int decimation_ratio = Common::MyMaxInt(Common::MyMinInt(speed, 12), 1);
         int y_length =
                 static_cast<int>(ceil(static_cast<double>(x_length) / decimation_ratio));
         double actual_fs = static_cast<double>(fs) / decimation_ratio;
-        int fft_size = GetSuitableFFTSize(y_length + 5 +
+        int fft_size = Common::GetSuitableFFTSize(y_length + 5 +
                                           2 * static_cast<int>(2.0 * actual_fs / boundary_f0_list[0]));
 
         // Calculation of the spectrum used for the f0 estimation
         double *y = new double[fft_size];
-        fft_complex *y_spectrum = new fft_complex[fft_size];
+        FFT::fft_complex *y_spectrum = new FFT::fft_complex[fft_size];
         GetWaveformAndSpectrum(x, x_length, y_length, actual_fs, fft_size,
                                decimation_ratio, y, y_spectrum);
 
@@ -1185,7 +1159,7 @@ namespace tw {
 
         int overlap_parameter = 7;
         int max_candidates =
-                matlab_round(number_of_channels / 10.0) * overlap_parameter;
+                MatlabFunctions::matlab_round(number_of_channels / 10.0) * overlap_parameter;
         double **f0_candidates = new double *[f0_length];
         double **f0_candidates_score = new double *[f0_length];
         for (int i = 0; i < f0_length; ++i) {
@@ -1223,21 +1197,18 @@ namespace tw {
         delete[] boundary_f0_list;
     }
 
-    int GetSamplesForHarvest(int fs, int x_length, double frame_period) {
+    int Harvest::GetSamplesForHarvest(int fs, int x_length, double frame_period) {
         return static_cast<int>(1000.0 * x_length / fs / frame_period) + 1;
     }
 
-    void Harvest(const double *x, int x_length, int fs,
-                 const HarvestOption *option, double *temporal_positions, double *f0) {
+    Harvest::Harvest(const double *x, int x_length, int fs, const Options *option, double *temporal_positions, double *f0) {
         // Several parameters will be controllable for debug.
         double target_fs = 8000.0;
-        int dimension_ratio = matlab_round(fs / target_fs);
+        int dimension_ratio = MatlabFunctions::matlab_round(fs / target_fs);
         double channels_in_octave = 40;
 
         if (option->frame_period == 1.0) {
-            HarvestGeneralBody(x, x_length, fs, 1, option->f0_floor,
-                               option->f0_ceil, channels_in_octave, dimension_ratio,
-                               temporal_positions, f0);
+            GeneralBody(x, x_length, fs, 1, option->f0_floor, option->f0_ceil, channels_in_octave, dimension_ratio, temporal_positions, f0);
             return;
         }
 
@@ -1246,26 +1217,19 @@ namespace tw {
                 GetSamplesForHarvest(fs, x_length, basic_frame_period);
         double *basic_f0 = new double[basic_f0_length];
         double *basic_temporal_positions = new double[basic_f0_length];
-        HarvestGeneralBody(x, x_length, fs, basic_frame_period, option->f0_floor,
+        GeneralBody(x, x_length, fs, basic_frame_period, option->f0_floor,
                            option->f0_ceil, channels_in_octave, dimension_ratio,
                            basic_temporal_positions, basic_f0);
 
         int f0_length = GetSamplesForHarvest(fs, x_length, option->frame_period);
         for (int i = 0; i < f0_length; ++i) {
             temporal_positions[i] = i * option->frame_period / 1000.0;
-            f0[i] = basic_f0[MyMinInt(basic_f0_length - 1,
-                                      matlab_round(temporal_positions[i] * 1000.0))];
+            f0[i] = basic_f0[Common::MyMinInt(basic_f0_length - 1,
+                                      MatlabFunctions::matlab_round(temporal_positions[i] * 1000.0))];
         }
 
         delete[] basic_f0;
         delete[] basic_temporal_positions;
-    }
-
-    void InitializeHarvestOption(HarvestOption *option) {
-        // You can change default parameters.
-        option->f0_ceil = world::kCeilF0;
-        option->f0_floor = world::kFloorF0;
-        option->frame_period = 5;
     }
 
 }  // namespace

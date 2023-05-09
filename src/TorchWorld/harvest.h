@@ -6,19 +6,27 @@
 #ifndef TORCHWORLD_HARVEST_H_
 #define TORCHWORLD_HARVEST_H_
 
-#include "TorchWorld/macrodefinitions.h"
+#include <TorchWorld/macrodefinitions.h>
+#include <TorchWorld/constantnumbers.h>
 
 namespace tw {
-    TW_WORLD_BEGIN_C_DECLS
+    class Harvest {
+    public:
 
 //-----------------------------------------------------------------------------
 // Struct for Harvest
 //-----------------------------------------------------------------------------
-    typedef struct {
-        double f0_floor;
-        double f0_ceil;
-        double frame_period;
-    } HarvestOption;
+        struct Options {
+            double f0_floor;
+            double f0_ceil;
+            double frame_period;
+
+            Options() {
+                f0_ceil = world::kCeilF0;
+                f0_floor = world::kFloorF0;
+                frame_period = 5;
+            }
+        };
 
 //-----------------------------------------------------------------------------
 // Harvest
@@ -33,33 +41,13 @@ namespace tw {
 //   temporal_positions   : Temporal positions.
 //   f0                   : F0 contour.
 //-----------------------------------------------------------------------------
-    void Harvest(const double *x, int x_length, int fs,
-                 const HarvestOption *option, double *temporal_positions, double *f0);
+        Harvest(const double *x, int x_length, int fs, const Options *option, double *temporal_positions, double *f0);
 
-//-----------------------------------------------------------------------------
-// InitializeHarvestOption allocates the memory to the struct and sets the
-// default parameters.
-//
-// Output:
-//   option   : Struct for the optional parameter.
-//-----------------------------------------------------------------------------
-    void InitializeHarvestOption(HarvestOption *option);
+        static void GeneralBody(const double *x, int x_length, int fs, int frame_period, double f0_floor, double f0_ceil, double channels_in_octave, int speed, double *temporal_positions, double *f0);
 
-//-----------------------------------------------------------------------------
-// GetSamplesForHarvest() calculates the number of samples required for
-// Harvest().
-//
-// Input:
-//   fs             : Sampling frequency [Hz]
-//   x_length       : Length of the input signal [Sample]
-//   frame_period   : Frame shift [msec]
-//
-// Output:
-//   The number of samples required to store the results of Harvest().
-//-----------------------------------------------------------------------------
-    int GetSamplesForHarvest(int fs, int x_length, double frame_period);
+        static int GetSamplesForHarvest(int fs, int x_length, double frame_period);
 
-    TW_WORLD_END_C_DECLS
+    };
 }
 
-#endif  // WORLD_HARVEST_H_
+#endif  // TORCHWORLD_HARVEST_H_
